@@ -19,11 +19,20 @@ include = [
 name = "rs-scollector"
 path = "src/main.rs"
 
+[[bin]]
+name = "mysql"
+path = "src/collectors/galera.rs"
+
 [dependencies]
 clap = "2"
 env_logger = "0.3"
 log = "0.3"
 toml = "0.1"
+
+[dependencies.mysql]
+version = "7.1.2"
+default-features = false
+features = ["socket"]
 
 [dev-dependencies]
 mktemp = "0.1.2"

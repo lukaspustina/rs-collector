@@ -2,7 +2,8 @@
 
 extern crate clap;
 extern crate env_logger;
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate log;
 
 use clap::{Arg, ArgMatches, App};
 use std::error::Error;
@@ -32,30 +33,31 @@ fn main() {
     }
 
     let app = App::new("rs-collector")
-        .version(VERSION)
-        .after_help("Two modes are supported, i.e., sending a datum with meta data or \
+                  .version(VERSION)
+                  .after_help("Two modes are supported, i.e., sending a datum with meta data or \
                                sending only meta data. The modes are controlled whether a value \
                                `--value` is passed or not. Please mind that in both cases the \
                                meta data is required.")
-        .arg(Arg::with_name("config")
-            .short("c")
-            .long("config")
-            .value_name("FILE")
-            .help("Sets a custom config file")
-            .takes_value(true))
-        .arg(Arg::with_name("show-config")
-            .long("show-config")
-            .help("Prints config"))
-        .arg(Arg::with_name("verbose")
-            .long("verbose")
-            .help("Enables verbose output"));
+                  .arg(Arg::with_name("config")
+                           .short("c")
+                           .long("config")
+                           .value_name("FILE")
+                           .help("Sets a custom config file")
+                           .takes_value(true))
+                  .arg(Arg::with_name("show-config")
+                           .long("show-config")
+                           .help("Prints config"))
+                  .arg(Arg::with_name("verbose")
+                           .long("verbose")
+                           .help("Enables verbose output"));
     let cli_args = app.get_matches();
 
     let verbose: bool = cli_args.is_present("verbose");
     let config: Config = match parse_args(&cli_args) {
         Ok(config) => config,
         Err(err) => {
-            exit_with_error(&format!("Failed to parse configuration, because {}.", err), -2);
+            exit_with_error(&format!("Failed to parse configuration, because {}.", err),
+                            -2);
         }
     };
     if cli_args.is_present("show-config") {
@@ -67,7 +69,7 @@ fn main() {
 
 fn parse_args(cli_args: &ArgMatches) -> Result<Config, Box<Error>> {
     let bosun_config_file_path = Path::new(cli_args.value_of("config")
-        .unwrap_or(DEFAULT_CONFIG_FILE));
+                                                   .unwrap_or(DEFAULT_CONFIG_FILE));
     let mut config: Config = Config::default();
 
     Ok(config)
@@ -90,5 +92,4 @@ fn exit_with_error(msg: &str, exit_code: i32) -> ! {
 
 
 #[cfg(test)]
-mod tests {
-}
+mod tests {}

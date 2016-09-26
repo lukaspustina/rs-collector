@@ -91,22 +91,4 @@ fn exit_with_error(msg: &str, exit_code: i32) -> ! {
 
 #[cfg(test)]
 mod tests {
-    use super::{Config, parse_tags};
-
-    #[test]
-    fn parse_tags_test_okay() {
-        let mut config = Config::default();
-        let tags = "key1=val1,key2=val2";
-        let _ = parse_tags(&mut config, &tags);
-        assert_eq!(config.tags.len(), 2);
-    }
-
-    #[test]
-    #[should_panic(expected = "assertion failed")]
-    fn parse_tags_test_fails_wrong_kv_separator() {
-        let mut config = Config::default();
-        let tags = "key1=val1,key2:val2";
-        let _ = parse_tags(&mut config, &tags);
-        assert_eq!(config.tags.len(), 2);
-    }
 }

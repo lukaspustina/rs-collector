@@ -5,15 +5,7 @@ use std::io::Read;
 use std::path::Path;
 use toml;
 
-// TODO: Move to Galera Collector
-#[derive(Debug)]
-#[derive(RustcDecodable)]
-#[allow(non_snake_case)]
-pub struct GaleraConfig {
-    pub User: String,
-    pub Password: String,
-    pub URL: String,
-}
+use ::collectors::galera::GaleraConfig;
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]

@@ -14,7 +14,7 @@ use collectors::Collector;
 use collectors::Id;
 use bosun::{Bosun, BosunRequest, Sample};
 
-pub fn run<T: Collector<T> + Send + 'static>(collectors: Vec<T>) -> () {
+pub fn run(collectors: Vec<Box<Collector + Send>>) -> () {
     let signal = chan_signal::notify(&[Signal::INT, Signal::TERM]);
     let timer = chan::tick(Duration::from_secs(TICK_INTERVAL));
     info!("Scheduler thread started.");
@@ -84,21 +84,19 @@ impl CollectorController {
 /**
 * Periodically runs the collector <T>
 **/
-struct CollectorRunner<T>
-    where T: Collector<T> + Send + 'static
-{
+struct CollectorRunner {
     id: Id,
     runner_rx: Receiver<CollectorRequest>,
     controller_tx: Sender<CollectorResponse>,
-    collector: Arc<Mutex<T>>,
+    collector: Arc<Mutex<Box<Collector + Send>>>,
 }
 
-impl<T: Collector<T> + Send + 'static> CollectorRunner<T> {
+impl CollectorRunner {
     fn new(id: Id,
            runner_rx: Receiver<CollectorRequest>,
            controller_tx: Sender<CollectorResponse>,
-           collector: T)
-           -> CollectorRunner<T> {
+           collector: Box<Collector + Send>)
+           -> CollectorRunner {
         CollectorRunner {
             id: id,
             runner_rx: runner_rx,
@@ -161,8 +159,8 @@ impl<T: Collector<T> + Send + 'static> CollectorRunner<T> {
     }
 }
 
-fn create_controllers<T: Collector<T> + Send + 'static>(
-    collectors: Vec<T>,
+fn create_controllers(
+    collectors: Vec<Box<Collector + Send>>,
     runners_to_main_tx: Sender<CollectorResponse>) -> Vec<CollectorController> {
     let mut controllers: Vec<CollectorController> = Vec::new();
 

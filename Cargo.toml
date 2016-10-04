@@ -20,6 +20,8 @@ name = "rs-scollector"
 path = "src/main.rs"
 
 [dependencies]
+chan = "0.1.18"
+chan-signal = "0.1.6"
 clap = "2"
 env_logger = "0.3"
 log = "0.3"

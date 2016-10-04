@@ -9,20 +9,20 @@ pub trait Collector<T> where T: Collector<T> + Send + 'static {
     fn shutdown(&self);
 }
 
-pub mod my_collector {
+pub mod Galera {
     use std::time::Duration;
     use std::thread;
 
     use bosun::Sample;
     use super::{Collector, Id};
 
-    pub struct MyCollector {
+    pub struct Galera {
         id: Id,
     }
 
-    impl Collector<MyCollector> for MyCollector {
-        fn init<U: Into<String>>(id: U) -> MyCollector {
-            MyCollector { id: id.into() }
+    impl Collector<Galera> for Galera {
+        fn init<U: Into<String>>(id: U) -> Galera {
+            Galera { id: id.into() }
         }
         fn id(&self) -> &Id {
             &self.id

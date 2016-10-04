@@ -1,9 +1,7 @@
 use bosun_emitter::Tags;
 use rustc_serialize::Decodable;
-use rustc_serialize::json;
-use rustc_serialize::json::EncoderError;
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::Read;
 use std::path::Path;
 use toml;
 
@@ -34,16 +32,6 @@ pub struct Config {
 }
 
 impl Config {
-    /// Creates a default configuration for `localhost`, port `8070`.
-    pub fn default() -> Config {
-        Config {
-            Host: "localhost:8070".to_string(),
-            Hostname: "localhost".to_string(),
-            Tags: Tags::new(),
-            Galera: None,
-        }
-    }
-
     /// Loads a configuration from an [SCollector](http://bosun.org/scollector/) configuration file.
     pub fn load_from_rs_collector_config(file_path: &Path) -> Result<Config, Box<::std::error::Error>> {
         match Config::load_toml(file_path) {
@@ -66,6 +54,18 @@ impl Config {
         match parser.parse() {
             Some(toml) => Ok(toml::Value::Table(toml)),
             None => Err(From::from(parser.errors.pop().unwrap())),
+        }
+    }
+}
+
+impl Default for Config {
+    /// Creates a default configuration for `localhost`, port `8070`.
+    fn default() -> Config {
+        Config {
+            Host: "localhost:8070".to_string(),
+            Hostname: "localhost".to_string(),
+            Tags: Tags::new(),
+            Galera: None,
         }
     }
 }

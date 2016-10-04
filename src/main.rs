@@ -3,28 +3,16 @@
 extern crate clap;
 extern crate env_logger;
 #[macro_use] extern crate log;
+extern crate rs_collector;
 
 use clap::{Arg, ArgMatches, App};
 use std::error::Error;
 use std::path::Path;
 
+use rs_collector::config::Config;
+
 static VERSION: &'static str = env!("CARGO_PKG_VERSION");
 static DEFAULT_CONFIG_FILE: &'static str = "/etc/rs-collector.conf";
-
-#[derive(Debug)]
-struct Config {
-    host: String,
-    hostname: String,
-}
-
-impl Config {
-    pub fn default() -> Config {
-        Config {
-            host: "".to_string(),
-            hostname: "".to_string(),
-        }
-    }
-}
 
 fn main() {
     if env_logger::init().is_err() {
@@ -37,7 +25,7 @@ fn main() {
                                sending only meta data. The modes are controlled whether a value \
                                `--value` is passed or not. Please mind that in both cases the \
                                meta data is required.")
-        .arg(Arg::with_name("config")
+        .arg(Arg::with_name("configfile")
             .short("c")
             .long("config")
             .value_name("FILE")
@@ -45,10 +33,7 @@ fn main() {
             .takes_value(true))
         .arg(Arg::with_name("show-config")
             .long("show-config")
-            .help("Prints config"))
-        .arg(Arg::with_name("verbose")
-            .long("verbose")
-            .help("Enables verbose output"));
+            .help("Prints config"));
     let cli_args = app.get_matches();
 
     let verbose: bool = cli_args.is_present("verbose");
@@ -66,21 +51,19 @@ fn main() {
 }
 
 fn parse_args(cli_args: &ArgMatches) -> Result<Config, Box<Error>> {
-    let bosun_config_file_path = Path::new(cli_args.value_of("config")
-        .unwrap_or(DEFAULT_CONFIG_FILE));
-    let mut config: Config = Config::default();
+    let config_file_path = Path::new(cli_args.value_of("configfile").unwrap_or(DEFAULT_CONFIG_FILE));
+    let mut config: Config = if config_file_path.exists() {
+        let config = try!(Config::load_from_rs_collector_config(&config_file_path));
+        config
+    } else {
+        Default::default()
+    };
 
     Ok(config)
 }
 
+fn run(config: &Config, verbose: bool) {
 
-fn run(config: &Config, verbose: bool) {}
-
-
-fn msg(msg: &str, verbose: bool) {
-    if verbose {
-        println!("{}", msg);
-    }
 }
 
 fn exit_with_error(msg: &str, exit_code: i32) -> ! {

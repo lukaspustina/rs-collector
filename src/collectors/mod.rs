@@ -17,7 +17,7 @@ pub trait Collector {
     fn shutdown(&self);
 }
 
-pub fn create_collectors(config: &Config) -> Vec<Box<Collector>> {
+pub fn create_collectors(config: &Config) -> Vec<Box<Collector + Send>> {
     let mut collectors = Vec::new();
     let mut galeras = galera::create_instances(config);
     collectors.append(&mut galeras);
@@ -49,10 +49,10 @@ pub mod galera {
         url: String,
     }
 
-    pub fn create_instances(config: &Config) -> Vec<Box<Collector>> {
+    pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
         match config.Galera {
             Some(ref config) => {
-                let id = format!("galera-{}@{}", config.User, config.Password);
+                let id = format!("galera#{}@{}", config.User, config.URL );
                 info!("Created instance of Galera collector: {}", id);
 
                 let collector = Galera {

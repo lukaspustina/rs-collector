@@ -64,6 +64,8 @@ fn parse_args(cli_args: &ArgMatches) -> Result<Config, Box<Error>> {
 
 fn run(config: &Config, verbose: bool) {
 
+    let collectors = rs_collector::collectors::create_collectors(config);
+    rs_collector::scheduler::run(collectors);
 }
 
 fn exit_with_error(msg: &str, exit_code: i32) -> ! {

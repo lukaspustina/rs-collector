@@ -9,7 +9,7 @@ use std::error::Error;
 use std::path::Path;
 
 static VERSION: &'static str = env!("CARGO_PKG_VERSION");
-static DEFAULT_CONFIG_FILE: &'static str = "/etc/bosun/scollector.conf";
+static DEFAULT_CONFIG_FILE: &'static str = "/etc/rs-collector.conf";
 
 #[derive(Debug)]
 struct Config {

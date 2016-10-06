@@ -3,13 +3,22 @@ use chan;
 
 use std::thread::JoinHandle;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 static TICK_INTERVAL: u64 = 5u64;
 
 #[derive(Debug)]
 pub struct Sample {
     pub time: u64,
+    pub metric: String,
+    pub value: f64,
+}
+
+impl Sample {
+    pub fn new<T: Into<String>, U: Into<f64>>(metric: T, value: U) -> Self {
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        Sample { time: now, metric: metric.into(), value: value.into() }
+    }
 }
 
 #[derive(Debug)]

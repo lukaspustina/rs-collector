@@ -1,168 +1,141 @@
-use bosun::Sample;
-use config::Config;
+#[macro_use] extern crate mysql;
+
+use mysql as my;
 
 
-pub enum Error {
-    Init,
-    Collection,
-    Shutdown,
+#[derive(Debug)]
+struct MetricDatum {
+    metric: String,
+    value: f64,
 }
 
-pub type Id = String;
-
-pub trait Collector {
-    fn init(&mut self) -> Result<(), Box<Error>>;
-    fn id(&self) -> &Id;
-    fn collect(&self) -> Sample;
-    fn shutdown(&self);
+#[derive(Debug)]
+struct WsrepStatus {
+    name: String,
+    value: String,
 }
 
-pub fn create_collectors(config: &Config) -> Vec<Box<Collector + Send>> {
-    let mut collectors = Vec::new();
-    let mut galeras = galera::create_instances(config);
-    collectors.append(&mut galeras);
-
-    collectors
+impl WsrepStatus {
+    pub fn new<T: Into<String>>(name: T, value: T) -> WsrepStatus {
+        WsrepStatus {
+            name: name.into(),
+            value: value.into(),
+        }
+    }
 }
 
-pub mod galera {
-    use mysql as my;
-    use std::time::Duration;
-    use std::thread;
-
-    use bosun::Sample;
-    use super::*;
-    use super::super::config::Config;
-
-    #[derive(Debug)]
-    #[derive(RustcDecodable)]
-    #[allow(non_snake_case)]
-    pub struct GaleraConfig {
-        pub User: String,
-        pub Password: String,
-        pub UseSocket: Option<Bool>,
-        pub URL: String,
-    }
-
-    pub struct Galera {
-        id: Id,
-        user: Option<String>,
-        password: Option<String>,
-        url: String,
-        pool: Option<my::Pool>,
-    }
-
-    pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
-        match config.Galera {
-            Some(ref config) => {
-                let id = format!("galera#{}@{}", config.User, config.URL );
-                info!("Created instance of Galera collector: {}", id);
-
-                let collector = Galera {
-                    id: id, user: config.User.clone(), password: config.Password.clone(),
-                    url: config.URL.clone(), pool: None
-                };
-                vec![Box::new(collector)]
-            }
-            None => {
-                Vec::new()
-            }
+impl From<WsrepStatus> for Option<MetricDatum> {
+    fn from(status: WsrepStatus) -> Self {
+        match status.name.as_ref() {
+            "wsrep_protocol_version" =>
+                Some(MetricDatum { metric: status.name, value: status.value.parse::<f64>().unwrap() }),
+            _ => None
         }
     }
+}
 
-    impl From<Galera> for my::Opts {
-        fn from(config: GaleraConfig) -> Self {
-            let mut optsbuilder: my::OptsBuilder = my::OptsBuilder::new();
-            optsbuilder.ip_or_hostname(config.ip_or_hostname)
-                .unix_addr(config.unix_addr)
-                .prefer_socket(config.prefer_socket)
-                .user(config.username)
-                .pass(config.password);
-            my::Opts::from(optsbuilder)
-        }
+struct GaleraConfig {
+    ip_or_hostname: Option<String>,
+    unix_addr: Option<String>,
+    prefer_socket: bool,
+    username: Option<String>,
+    password: Option<String>,
+}
+
+impl From<GaleraConfig> for my::Opts {
+    fn from(config: GaleraConfig) -> Self {
+        let mut optsbuilder: my::OptsBuilder = my::OptsBuilder::new();
+        optsbuilder.ip_or_hostname(config.ip_or_hostname)
+            .unix_addr(config.unix_addr)
+            .prefer_socket(config.prefer_socket)
+            .user(config.username)
+            .pass(config.password);
+        my::Opts::from(optsbuilder)
     }
+}
 
-    impl Collector for Galera {
-        fn init(&mut self) -> Result<(), Box<Error>> {
-            let pool = my::Pool::new(collector_config).unwrap();
-            self.pool = Some(pool);
-            Ok(())
-        }
+trait Collector<T, S> {
+    fn init(config: S) -> T;
+    fn run(&self) -> Vec<MetricDatum>;
+    fn shutdown(&mut self);
+}
 
-        fn id(&self) -> &Id {
-            &self.id
-        }
+struct GaleraCollector {
+    pool: my::Pool,
+}
 
-        fn collect(&self) -> Sample {
-            // TODO: make this safe -> if let / match
-            let wsrepstates: Vec<WsrepStatus> = query_wsrep_status(&self.pool.unwrap());
-            trace!("wsrepstates = {:#?}", wsrepstates);
-            let metric_data = wsrepstates.convert_to_metric();
-            debug!("metric_data = {:#?}", metric_data);
-
-            // TODO: Send all
-            metric_data[0]
-        }
-        fn shutdown(&self) {}
-    }
-
-
-    #[derive(Debug)]
-    struct WsrepStatus {
-        name: String,
-        value: String,
-    }
-
-    impl WsrepStatus {
-        pub fn new<T: Into<String>>(name: T, value: T) -> WsrepStatus {
-            WsrepStatus {
-                name: name.into(),
-                value: value.into(),
-            }
-        }
-    }
-
-    impl From<WsrepStatus> for Option<Sample> {
-        fn from(status: WsrepStatus) -> Self {
-            match status.name.as_ref() {
-                "wsrep_protocol_version" =>
-                    Some(Sample::new(status.name, status.value.parse::<f64>().unwrap()) ),
-                _ => None
-            }
-        }
-    }
-
-    fn query_wsrep_status(pool: &my::Pool) -> Vec<WsrepStatus> {
-        let wsrepstates: Vec<WsrepStatus> = pool
-            .prep_exec("SHOW GLOBAL STATUS LIKE 'wsrep_%'", ())
-            .map(|result| {
-                result.map(|x| x.unwrap())
-                    .map(|row| {
-                        let (name, value): (String, String) = my::from_row(row);
-                        WsrepStatus::new(name, value)
-                    })
-                    .collect()
-            })
-            .unwrap();
-        wsrepstates
-    }
-
-    trait ConvertToMetric {
-        fn convert_to_metric(self) -> Vec<Sample>;
-    }
-
-    impl ConvertToMetric for Vec<WsrepStatus> {
-        fn convert_to_metric(self) -> Vec<Sample> {
-            self.into_iter()
-                .flat_map(|x| Option::<Sample>::from(x))
+fn query_wsrep_status(galera: &GaleraCollector) -> Vec<WsrepStatus> {
+    let wsrepstates: Vec<WsrepStatus> = galera.pool
+        .prep_exec("SHOW GLOBAL STATUS LIKE 'wsrep_%'", ())
+        .map(|result| {
+            result.map(|x| x.unwrap())
+                .map(|row| {
+                    let (name, value): (String, String) = my::from_row(row);
+                    WsrepStatus::new(name, value)
+                })
                 .collect()
-        }
+        })
+        .unwrap();
+    wsrepstates
+}
+
+trait ConvertToMetric {
+    fn convert_to_metric(self) -> Vec<MetricDatum>;
+}
+
+impl ConvertToMetric for Vec<WsrepStatus> {
+    fn convert_to_metric(self) -> Vec<MetricDatum> {
+        self.into_iter()
+            .flat_map(|x| Option::<MetricDatum>::from(x))
+            .collect()
+    }
+}
+
+impl Collector<GaleraCollector, GaleraConfig> for GaleraCollector {
+    fn init(collector_config: GaleraConfig) -> GaleraCollector {
+        let pool = my::Pool::new(collector_config).unwrap();
+        GaleraCollector { pool: pool }
     }
 
+    fn run(&self) -> Vec<MetricDatum> {
+        let wsrepstates: Vec<WsrepStatus> = query_wsrep_status(self);
+        println!("wsrepstates = {:#?}", wsrepstates);
+        let metric_data = wsrepstates.convert_to_metric();
+        println!("metric_data = {:#?}", metric_data);
+
+        metric_data
+    }
+
+    fn shutdown(&mut self) {}
 }
+
+
+fn main() {
+    let config = GaleraConfig {
+        ip_or_hostname: None,
+        unix_addr: Some("/var/run/mysqld/mysqld.sock".to_string()),
+        prefer_socket: true,
+        username: Some("".to_string()),
+        password: Some("".to_string()),
+    };
+
+    println!("Connecting ...");
+    let mut galera = GaleraCollector::init(config);
+    println!("Connected.");
+
+    println!("Running ...");
+    galera.run();
+    println!("Run.");
+
+    println!("Shutting down ...");
+    galera.shutdown();
+    println!("Shut down.");
+}
+
+
 #[cfg(test)]
 mod tests {
-    use super::galera::WsrepStatus;
+    use super::WsrepStatus;
 
 
     fn generate_test_data() -> Vec<WsrepStatus> {

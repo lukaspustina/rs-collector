@@ -147,8 +147,10 @@ impl CollectorRunner {
                 thread::spawn(move || {
                     debug!("CollectorRunner {} spawned sample thread.", &id);
                     let ref collector = *collector.lock().unwrap();
-                    let sample = collector.collect();
-                    tx.send(CollectorResponse::Sample(sample));
+                    let samples = collector.collect();
+                    for s in samples.into_iter() {
+                        tx.send(CollectorResponse::Sample(s));
+                    }
                     debug!("CollectorRunner {} finished sample thread.", &id);
                 });
             }
@@ -161,20 +163,29 @@ impl CollectorRunner {
 
 fn create_controllers(
     collectors: Vec<Box<Collector + Send>>,
-    runners_to_main_tx: Sender<CollectorResponse>) -> Vec<CollectorController> {
+    runners_to_main_tx: Sender<CollectorResponse>)
+    -> Vec<CollectorController> {
+
     let mut controllers: Vec<CollectorController> = Vec::new();
 
-    for c in collectors.into_iter() {
-        let (to_runner_tx, from_controller_rx) = chan::async();
-        let mut controller = CollectorController::new(c.id().clone(), to_runner_tx);
-        let runner = CollectorRunner::new(c.id().clone(),
-                                          from_controller_rx,
-                                          runners_to_main_tx.clone(),
-                                          c);
-        let runner_thread = runner.spawn();
+    for mut c in collectors.into_iter() {
+        match c.init() {
+            Ok(_) => {
+                let (to_runner_tx, from_controller_rx) = chan::async();
+                let mut controller = CollectorController::new(c.id().clone(), to_runner_tx);
+                let runner = CollectorRunner::new(c.id().clone(),
+                                                  from_controller_rx,
+                                                  runners_to_main_tx.clone(),
+                                                  c);
+                let runner_thread = runner.spawn();
 
-        controller.runner_thread = Some(runner_thread);
-        controllers.push(controller);
+                controller.runner_thread = Some(runner_thread);
+                controllers.push(controller);
+            },
+            Err(err) => {
+                error!("Failed to initialize collector {}: {:?}", c.id(), err);
+            }
+        }
     }
 
     controllers

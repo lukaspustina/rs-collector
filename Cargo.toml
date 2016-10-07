@@ -16,12 +16,8 @@ include = [
 ]
 
 [[bin]]
-name = "rs-scollector"
+name = "rs-collector"
 path = "src/main.rs"
-
-[[bin]]
-name = "mysql"
-path = "src/collectors/galera.rs"
 
 [dependencies]
 bosun_emitter = "1.0.0"

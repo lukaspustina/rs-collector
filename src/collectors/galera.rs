@@ -1,13 +1,104 @@
-#[macro_use] extern crate mysql;
+// See http://galeracluster.com/documentation-webpages/monitoringthecluster.html
+
 
 use mysql as my;
+use std::time::Duration;
+use std::thread;
 
+use bosun::Sample;
+use super::*;
+use super::super::config::Config;
 
 #[derive(Debug)]
-struct MetricDatum {
-    metric: String,
-    value: f64,
+#[derive(RustcDecodable)]
+#[allow(non_snake_case)]
+pub struct GaleraConfig {
+    pub User: Option<String>,
+    pub Password: Option<String>,
+    pub Socket: Option<String>,
+    pub Host: Option<String>,
 }
+
+#[derive(Clone)]
+pub struct Galera {
+    id: Id,
+    user: Option<String>,
+    password: Option<String>,
+    socket: Option<String>,
+    ip_or_hostname: Option<String>,
+    pool: Option<my::Pool>,
+}
+
+pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
+    match config.Galera {
+        Some(ref config) => {
+            // TODO: WTF?
+            let id = format!("galera#{}@{}{}",
+                             config.User.as_ref().unwrap_or(&"''".to_string()),
+                             config.Socket.as_ref().unwrap_or(&"".to_string()),
+                             config.Host.as_ref().unwrap_or(&"".to_string()));
+            info!("Created instance of Galera collector: {}", id);
+
+            let collector = Galera {
+                id: id, user: config.User.clone(), password: config.Password.clone(),
+                socket: config.Socket.clone(), ip_or_hostname: config.Host.clone(), pool: None,
+            };
+            vec![Box::new(collector)]
+        }
+        None => {
+            Vec::new()
+        }
+    }
+}
+
+impl From<Galera> for my::Opts {
+    fn from(config: Galera) -> Self {
+        let mut optsbuilder: my::OptsBuilder = my::OptsBuilder::new();
+        // prefer_socket is set by default; but we make sure it is set anyway.
+        if config.socket.is_some() {
+            optsbuilder.prefer_socket(true);
+        }
+        optsbuilder
+            .ip_or_hostname(config.ip_or_hostname)
+            .unix_addr(config.socket)
+            .user(config.user)
+            .pass(config.password);
+        my::Opts::from(optsbuilder)
+    }
+}
+
+impl Collector for Galera {
+    fn init(&mut self) -> Result<(), Box<Error>> {
+        use std::error::Error;
+
+        let galera = self.clone();
+        let pool = my::Pool::new(galera);
+        match pool {
+            Ok(pool) => {
+                self.pool = Some(pool);
+                Ok(())
+            },
+            // TODO: Simplify
+            Err(err) => Err(Box::new(super::Error::InitError(err.description().to_string())))
+        }
+    }
+
+    fn id(&self) -> &Id {
+        &self.id
+    }
+
+    fn collect(&self) -> Vec<Sample> {
+        // TODO: make this safe -> if let / match
+        let wsrepstates: Vec<WsrepStatus> = query_wsrep_status(self.pool.as_ref().unwrap());
+        trace!("wsrepstates = {:#?}", wsrepstates);
+        let mut metric_data = wsrepstates.convert_to_metric();
+        debug!("metric_data = {:#?}", metric_data);
+
+        metric_data
+    }
+    fn shutdown(&self) {}
+}
+
 
 #[derive(Debug)]
 struct WsrepStatus {
@@ -24,48 +115,27 @@ impl WsrepStatus {
     }
 }
 
-impl From<WsrepStatus> for Option<MetricDatum> {
+impl From<WsrepStatus> for Option<Sample> {
     fn from(status: WsrepStatus) -> Self {
+        let metric_name = format!("galera.{}", &status.name.replace("_", "."));
         match status.name.as_ref() {
-            "wsrep_protocol_version" =>
-                Some(MetricDatum { metric: status.name, value: status.value.parse::<f64>().unwrap() }),
+            "wsrep_protocol_version" => {
+                Some(Sample::new(metric_name, status.value.parse::<f64>().unwrap()))
+            }
+            "wsrep_cluster_status" => {
+                let value = match status.value.clone().to_lowercase().as_ref() {
+                    "primary" => 0,
+                    _ => 1,
+                };
+                Some(Sample::new(metric_name, value))
+            }
             _ => None
         }
     }
 }
 
-struct GaleraConfig {
-    ip_or_hostname: Option<String>,
-    unix_addr: Option<String>,
-    prefer_socket: bool,
-    username: Option<String>,
-    password: Option<String>,
-}
-
-impl From<GaleraConfig> for my::Opts {
-    fn from(config: GaleraConfig) -> Self {
-        let mut optsbuilder: my::OptsBuilder = my::OptsBuilder::new();
-        optsbuilder.ip_or_hostname(config.ip_or_hostname)
-            .unix_addr(config.unix_addr)
-            .prefer_socket(config.prefer_socket)
-            .user(config.username)
-            .pass(config.password);
-        my::Opts::from(optsbuilder)
-    }
-}
-
-trait Collector<T, S> {
-    fn init(config: S) -> T;
-    fn run(&self) -> Vec<MetricDatum>;
-    fn shutdown(&mut self);
-}
-
-struct GaleraCollector {
-    pool: my::Pool,
-}
-
-fn query_wsrep_status(galera: &GaleraCollector) -> Vec<WsrepStatus> {
-    let wsrepstates: Vec<WsrepStatus> = galera.pool
+fn query_wsrep_status(pool: &my::Pool) -> Vec<WsrepStatus> {
+    let wsrepstates: Vec<WsrepStatus> = pool
         .prep_exec("SHOW GLOBAL STATUS LIKE 'wsrep_%'", ())
         .map(|result| {
             result.map(|x| x.unwrap())
@@ -80,62 +150,20 @@ fn query_wsrep_status(galera: &GaleraCollector) -> Vec<WsrepStatus> {
 }
 
 trait ConvertToMetric {
-    fn convert_to_metric(self) -> Vec<MetricDatum>;
+    fn convert_to_metric(self) -> Vec<Sample>;
 }
 
 impl ConvertToMetric for Vec<WsrepStatus> {
-    fn convert_to_metric(self) -> Vec<MetricDatum> {
+    fn convert_to_metric(self) -> Vec<Sample> {
         self.into_iter()
-            .flat_map(|x| Option::<MetricDatum>::from(x))
+            .flat_map(|x| Option::<Sample>::from(x))
             .collect()
     }
 }
 
-impl Collector<GaleraCollector, GaleraConfig> for GaleraCollector {
-    fn init(collector_config: GaleraConfig) -> GaleraCollector {
-        let pool = my::Pool::new(collector_config).unwrap();
-        GaleraCollector { pool: pool }
-    }
-
-    fn run(&self) -> Vec<MetricDatum> {
-        let wsrepstates: Vec<WsrepStatus> = query_wsrep_status(self);
-        println!("wsrepstates = {:#?}", wsrepstates);
-        let metric_data = wsrepstates.convert_to_metric();
-        println!("metric_data = {:#?}", metric_data);
-
-        metric_data
-    }
-
-    fn shutdown(&mut self) {}
-}
-
-
-fn main() {
-    let config = GaleraConfig {
-        ip_or_hostname: None,
-        unix_addr: Some("/var/run/mysqld/mysqld.sock".to_string()),
-        prefer_socket: true,
-        username: Some("".to_string()),
-        password: Some("".to_string()),
-    };
-
-    println!("Connecting ...");
-    let mut galera = GaleraCollector::init(config);
-    println!("Connected.");
-
-    println!("Running ...");
-    galera.run();
-    println!("Run.");
-
-    println!("Shutting down ...");
-    galera.shutdown();
-    println!("Shut down.");
-}
-
-
 #[cfg(test)]
 mod tests {
-    use super::WsrepStatus;
+    use super::galera::WsrepStatus;
 
 
     fn generate_test_data() -> Vec<WsrepStatus> {

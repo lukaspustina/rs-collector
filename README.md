@@ -8,6 +8,7 @@
     This is known behaviour of chan::tick and we need to find a work around.
 
 1. Transform all wsrep values to metrics
+1. Add metadate for all wsrep values
 1. Handle tags
 1. Automate packaging for Ubuntu
 1. Tests

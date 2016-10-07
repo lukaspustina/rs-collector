@@ -1,13 +1,10 @@
 // See http://galeracluster.com/documentation-webpages/monitoringthecluster.html
 
-
 use mysql as my;
-use std::time::Duration;
-use std::thread;
 
 use bosun::Sample;
-use super::*;
-use super::super::config::Config;
+use collectors::*;
+use config::Config;
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]
@@ -91,7 +88,7 @@ impl Collector for Galera {
         // TODO: make this safe -> if let / match
         let wsrepstates: Vec<WsrepStatus> = query_wsrep_status(self.pool.as_ref().unwrap());
         trace!("wsrepstates = {:#?}", wsrepstates);
-        let mut metric_data = wsrepstates.convert_to_metric();
+        let metric_data = wsrepstates.convert_to_metric();
         debug!("metric_data = {:#?}", metric_data);
 
         metric_data

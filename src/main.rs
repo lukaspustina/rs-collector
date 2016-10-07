@@ -36,7 +36,6 @@ fn main() {
             .help("Prints config"));
     let cli_args = app.get_matches();
 
-    let verbose: bool = cli_args.is_present("verbose");
     let config: Config = match parse_args(&cli_args) {
         Ok(config) => config,
         Err(err) => {
@@ -48,12 +47,12 @@ fn main() {
         println!("config: {:?}", config);
     }
 
-    run(&config, verbose);
+    run(&config);
 }
 
 fn parse_args(cli_args: &ArgMatches) -> Result<Config, Box<Error>> {
     let config_file_path = Path::new(cli_args.value_of("configfile").unwrap_or(DEFAULT_CONFIG_FILE));
-    let mut config: Config = if config_file_path.exists() {
+    let config: Config = if config_file_path.exists() {
         let config = try!(Config::load_from_rs_collector_config(&config_file_path));
         config
     } else {
@@ -63,8 +62,7 @@ fn parse_args(cli_args: &ArgMatches) -> Result<Config, Box<Error>> {
     Ok(config)
 }
 
-fn run(config: &Config, verbose: bool) {
-
+fn run(config: &Config) {
     let collectors = rs_collector::collectors::create_collectors(config);
     rs_collector::scheduler::run(collectors, config);
 }

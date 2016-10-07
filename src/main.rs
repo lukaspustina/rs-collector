@@ -43,6 +43,7 @@ fn main() {
             exit_with_error(&format!("Failed to parse configuration, because {}.", err), -2);
         }
     };
+    // TODO a config must have been parsed; if not exit!
     if cli_args.is_present("show-config") {
         println!("config: {:?}", config);
     }

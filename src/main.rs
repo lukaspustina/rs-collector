@@ -1,5 +1,8 @@
 //! rs-collector: An scollector compatible telemetry collector written in Rust.
 
+#![feature(alloc_system)]
+extern crate alloc_system;
+
 extern crate clap;
 extern crate env_logger;
 #[macro_use] extern crate log;

@@ -5,7 +5,7 @@ use std::thread::JoinHandle;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-static TICK_INTERVAL_SEC: u64 = 15u64;
+static TICK_INTERVAL_SEC: u64 = 1u64;
 
 #[derive(Debug)]
 pub struct Sample {
@@ -57,6 +57,7 @@ impl Bosun {
                 chan_select! {
                     timer.recv() => {
                         trace!("I've been ticked. Current sample queue length is {:#?}", &self.queue.len());
+                        /*
                         for mut s in self.queue.drain(..) {
                             let value = format!("{}", &s.value);
                             s.tags.insert("host".to_string(), self.hostname.clone());
@@ -72,17 +73,21 @@ impl Bosun {
                                 // ring buffer
                             }
                         }
+                        */
                     },
                     from_main_rx.recv() -> msg => {
                         match msg {
+                        /*
                             Some(BosunRequest::Sample(sample)) => {
                                 debug!("Received new sample '{}'.", sample.time);
                                 self.queue.push(sample);
-                            }
+                            },
+                        */
                             Some(BosunRequest::Shutdown) => {
                                 debug!("Received message to shut down.");
                                 break
                             }
+                            Some(_) => { },
                             None => {
                                 error!("Channel unexpectedly shut down.");
                             }

@@ -66,6 +66,8 @@ impl From<Galera> for my::Opts {
 
 impl Collector for Galera {
     fn init(&mut self) -> Result<(), Box<Error>> {
+        info!("Initializing Galera collector {}", &self.id);
+        /*
         use std::error::Error;
 
         let galera = self.clone();
@@ -78,6 +80,8 @@ impl Collector for Galera {
             // TODO: Simplify
             Err(err) => Err(Box::new(super::Error::InitError(err.description().to_string())))
         }
+        */
+        Ok(())
     }
 
     fn id(&self) -> &Id {
@@ -85,14 +89,22 @@ impl Collector for Galera {
     }
 
     fn collect(&self) -> Vec<Sample> {
+        /*
         // TODO: make this safe -> if let / match
         let wsrepstates: Vec<WsrepStatus> = query_wsrep_status(self.pool.as_ref().unwrap());
+        */
+        let wsrepstates = vec![
+             WsrepStatus::new("wsrep_protocol_version", "7" ),
+             WsrepStatus::new("wsrep_cluster_status", "Primary"),
+         ];
+
         trace!("wsrepstates = {:#?}", wsrepstates);
         let metric_data = wsrepstates.convert_to_metric();
         debug!("metric_data = {:#?}", metric_data);
 
         metric_data
     }
+
     fn shutdown(&self) {}
 }
 

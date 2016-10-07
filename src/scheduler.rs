@@ -42,7 +42,7 @@ pub fn run(collectors: Vec<Box<Collector + Send>>, config: &Config) -> () {
     info!("Scheduler thread finished.");
 }
 
-static TICK_INTERVAL_SEC: u64 = 15u64;
+static TICK_INTERVAL_SEC: u64 = 1u64;
 
 #[derive(Debug)]
 enum CollectorRequest {

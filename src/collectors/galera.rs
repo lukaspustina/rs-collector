@@ -116,17 +116,77 @@ impl From<WsrepStatus> for Option<Sample> {
     fn from(status: WsrepStatus) -> Self {
         let metric_name = format!("galera.{}", &status.name.replace("_", "."));
         match status.name.as_ref() {
+            "wsrep_local_state_uuid" => { None },
             "wsrep_protocol_version" => {
                 Some(Sample::new(metric_name, status.value.parse::<f64>().unwrap()))
-            }
+            },
+            "wsrep_last_committed" => { None },
+            "wsrep_replicated" => { None },
+            "wsrep_replicated_bytes" => { None },
+            "wsrep_repl_keys" => { None },
+            "wsrep_repl_keys_bytes" => { None },
+            "wsrep_repl_data_bytes" => { None },
+            "wsrep_repl_other_bytes" => { None },
+            "wsrep_received" => { None },
+            "wsrep_received_bytes" => { None },
+            "wsrep_local_commits" => { None },
+            "wsrep_local_cert_failures" => { None },
+            "wsrep_local_replays" => { None },
+            "wsrep_local_send_queue" => { None },
+            "wsrep_local_send_queue_max" => { None },
+            "wsrep_local_send_queue_min" => { None },
+            "wsrep_local_send_queue_avg" => { None },
+            "wsrep_local_recv_queue" => { None },
+            "wsrep_local_recv_queue_max" => { None },
+            "wsrep_local_recv_queue_min" => { None },
+            "wsrep_local_recv_queue_avg" => { None },
+            "wsrep_local_cached_downto" => { None },
+            "wsrep_flow_control_paused_ns" => { None },
+            "wsrep_flow_control_paused" => { None },
+            "wsrep_flow_control_sent" => { None },
+            "wsrep_flow_control_recv" => { None },
+            "wsrep_cert_deps_distance" => { None },
+            "wsrep_apply_oooe" => { None },
+            "wsrep_apply_oool" => { None },
+            "wsrep_apply_window" => { None },
+            "wsrep_commit_oooe" => { None },
+            "wsrep_commit_oool" => { None },
+            "wsrep_commit_window" => { None },
+            "wsrep_local_state" => { None },
+            "wsrep_local_state_comment" => { None },
+            "wsrep_cert_index_size" => { None },
+            "wsrep_cert_bucket_count" => { None },
+            "wsrep_gcache_pool_size" => { None },
+            "wsrep_causal_reads" => { None },
+            "wsrep_cert_interval" => { None },
+            "wsrep_incoming_addresses" => { None },
+            "wsrep_desync_count" => { None },
+            "wsrep_evs_delayed" => { None },
+            "wsrep_evs_evict_list" => { None },
+            "wsrep_evs_repl_latency" => { None },
+            "wsrep_evs_state" => { None },
+            "wsrep_gcomm_uuid" => { None },
+            "wsrep_cluster_conf_id" => { None },
+            "wsrep_cluster_size" => { None },
+            "wsrep_cluster_state_uuid" => { None },
             "wsrep_cluster_status" => {
                 let value = match status.value.clone().to_lowercase().as_ref() {
                     "primary" => 0,
                     _ => 1,
                 };
                 Some(Sample::new(metric_name, value))
+            },
+            "wsrep_connected" => { None },
+            "wsrep_local_bf_aborts" => { None },
+            "wsrep_local_index" => { None },
+            "wsrep_provider_name" => { None },
+            "wsrep_provider_vendor" => { None },
+            "wsrep_provider_version" => { None },
+            "wsrep_ready" => { None },
+            x => {
+                warn!("Galera collector found new wsrep status '{}'.", x);
+                None
             }
-            _ => None
         }
     }
 }

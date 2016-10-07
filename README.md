@@ -11,4 +11,5 @@
 1. Handle tags
 1. Automate packaging for Ubuntu
 1. Tests
+1. Extend bosun_emitter to send multiple data points
 

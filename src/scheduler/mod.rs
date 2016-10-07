@@ -210,6 +210,7 @@ fn event_loop(threads: &Vec<CollectorController>,
                     }
                     None => {
                         error!("Channel unexpectedly shut down.");
+                        break
                     }
                 }
             }

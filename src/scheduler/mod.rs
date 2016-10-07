@@ -10,11 +10,12 @@ use std::thread;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use config::Config;
 use collectors::Collector;
 use collectors::Id;
 use bosun::{Bosun, BosunRequest, Sample};
 
-pub fn run(collectors: Vec<Box<Collector + Send>>) -> () {
+pub fn run(collectors: Vec<Box<Collector + Send>>, config: &Config) -> () {
     let signal = chan_signal::notify(&[Signal::INT, Signal::TERM]);
     let timer = chan::tick(Duration::from_secs(TICK_INTERVAL));
     info!("Scheduler thread started.");
@@ -24,7 +25,7 @@ pub fn run(collectors: Vec<Box<Collector + Send>>) -> () {
     info!("Loaded {} collectors: {:#?}", controllers.len(), controllers);
 
     let (to_bosun_tx, from_main_rx) = chan::async();
-    let bosun = Bosun::new(from_main_rx);
+    let bosun = Bosun::new(&config.Host, &config.Hostname, from_main_rx);
     let bosun_thread = bosun.spawn();
 
     event_loop(&controllers,
@@ -169,6 +170,7 @@ fn create_controllers(
     let mut controllers: Vec<CollectorController> = Vec::new();
 
     for mut c in collectors.into_iter() {
+        // Initialization might be moved to collector threads?
         match c.init() {
             Ok(_) => {
                 let (to_runner_tx, from_controller_rx) = chan::async();

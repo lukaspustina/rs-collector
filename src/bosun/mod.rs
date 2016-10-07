@@ -5,7 +5,7 @@ use std::thread::JoinHandle;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-static TICK_INTERVAL: u64 = 5u64;
+static TICK_INTERVAL_SEC: u64 = 15u64;
 
 #[derive(Debug)]
 pub struct Sample {
@@ -47,7 +47,7 @@ impl Bosun {
     }
 
     pub fn spawn(mut self) -> JoinHandle<()> {
-        let timer = chan::tick(Duration::from_secs(TICK_INTERVAL));
+        let timer = chan::tick(Duration::from_secs(TICK_INTERVAL_SEC));
 
         thread::spawn(move || {
             info!("Bosun thread started.");

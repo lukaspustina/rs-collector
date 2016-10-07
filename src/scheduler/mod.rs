@@ -17,7 +17,7 @@ use bosun::{Bosun, BosunRequest, Sample};
 
 pub fn run(collectors: Vec<Box<Collector + Send>>, config: &Config) -> () {
     let signal = chan_signal::notify(&[Signal::INT, Signal::TERM]);
-    let timer = chan::tick(Duration::from_secs(TICK_INTERVAL));
+    let timer = chan::tick(Duration::from_secs(TICK_INTERVAL_SEC));
     info!("Scheduler thread started.");
 
     let (to_main_tx, from_runners_rx) = chan::async();
@@ -42,7 +42,7 @@ pub fn run(collectors: Vec<Box<Collector + Send>>, config: &Config) -> () {
     info!("Scheduler thread finished.");
 }
 
-static TICK_INTERVAL: u64 = 1u64;
+static TICK_INTERVAL_SEC: u64 = 15u64;
 
 #[derive(Debug)]
 enum CollectorRequest {

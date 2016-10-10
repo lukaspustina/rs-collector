@@ -70,16 +70,18 @@ pub struct Bosun {
     queue: Vec<Sample>,
     from_main_rx: Receiver<BosunRequest>,
     bosun_client: BosunClient,
+    default_tags: Tags,
     hostname: String,
 }
 
 impl Bosun {
-    pub fn new(host: &str, hostname: &str, from_main_rx: Receiver<BosunRequest>) -> Bosun {
+    pub fn new(host: &str, hostname: &str, default_tags: &Tags, from_main_rx: Receiver<BosunRequest>) -> Bosun {
         let bosun_client = BosunClient::new(host);
         Bosun {
             queue: Vec::new(),
             from_main_rx: from_main_rx,
             bosun_client: bosun_client,
+            default_tags: default_tags.clone(),
             hostname: hostname.to_string(),
         }
     }
@@ -98,6 +100,7 @@ impl Bosun {
                         for mut s in self.queue.drain(..) {
                             let value = format!("{}", &s.value);
                             s.tags.insert("host".to_string(), self.hostname.clone());
+                            s.tags.extend(self.default_tags.clone());
                             let d = Datum {
                                 metric: &s.metric, timestamp: s.time as i64, value: &value, tags: &s.tags };
                             debug!("Sending datum {:?} to Bosun.", &d);

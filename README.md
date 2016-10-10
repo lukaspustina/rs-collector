@@ -13,7 +13,7 @@
 1. [x] Transform all wsrep values to metrics
 1. [x] Add metadata for all wsrep values
 1. [x] Check additional state for metrics
-1. [ ] Handle tags
+1. [x] Handle tags
 1. [ ] Automate packaging for Ubuntu
 1. [ ] Tests
 1. [ ] Extend bosun_emitter to send multiple data points

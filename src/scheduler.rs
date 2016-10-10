@@ -25,7 +25,7 @@ pub fn run(collectors: Vec<Box<Collector + Send>>, config: &Config) -> () {
     info!("Loaded {} collectors: {:#?}", controllers.len(), controllers);
 
     let (to_bosun_tx, from_main_rx) = chan::async();
-    let bosun = Bosun::new(&config.Host, &config.Hostname, from_main_rx);
+    let bosun = Bosun::new(&config.Host, &config.Hostname, &config.Tags, from_main_rx);
     let bosun_thread = bosun.spawn();
 
     event_loop(&controllers,

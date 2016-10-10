@@ -17,3 +17,4 @@ pub mod bosun;
 pub mod collectors;
 pub mod config;
 pub mod scheduler;
+pub mod utils;

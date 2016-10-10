@@ -5,6 +5,7 @@ use mysql as my;
 use bosun::Sample;
 use collectors::*;
 use config::Config;
+use utils;
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]
@@ -112,79 +113,248 @@ impl WsrepStatus {
     }
 }
 
+fn value_number_to_f64(name: &str, value: &str) -> Option<Sample> {
+    match value.parse::<f64>() {
+        Ok(value) => {
+            let metric_name = name_to_metric(name);
+            Some(Sample::new(metric_name, value))
+        },
+        Err(err) => {
+            error!("Failed to parse '{}' to decimal, because {}", &name, err);
+            None
+        }
+    }
+}
+
+fn value_uuid_to_decimal(name: &str, value: &str) -> Option<Sample> {
+    match utils::uuid_to_decimal(value) {
+        Ok(decimal) => {
+            let metric_name = name_to_metric(&name);
+            Some(Sample::new(metric_name, decimal as f64))
+        },
+        Err(err) => {
+            error!("Failed to parse '{}' to decimal, because {}", name, err);
+            None
+        }
+    }
+}
+
+fn name_to_metric(name: &str) -> String {
+    format!("galera.{}", &name.replace("_", "."))
+}
+
 impl From<WsrepStatus> for Option<Sample> {
     fn from(status: WsrepStatus) -> Self {
-        let metric_name = format!("galera.{}", &status.name.replace("_", "."));
         match status.name.as_ref() {
-            "wsrep_local_state_uuid" => { None },
-            "wsrep_protocol_version" => {
-                Some(Sample::new(metric_name, status.value.parse::<f64>().unwrap()))
+            name @ "wsrep_local_state_uuid" => {
+                value_uuid_to_decimal(&name, &status.value)
             },
-            "wsrep_last_committed" => { None },
-            "wsrep_replicated" => { None },
-            "wsrep_replicated_bytes" => { None },
-            "wsrep_repl_keys" => { None },
-            "wsrep_repl_keys_bytes" => { None },
-            "wsrep_repl_data_bytes" => { None },
-            "wsrep_repl_other_bytes" => { None },
-            "wsrep_received" => { None },
-            "wsrep_received_bytes" => { None },
-            "wsrep_local_commits" => { None },
-            "wsrep_local_cert_failures" => { None },
-            "wsrep_local_replays" => { None },
-            "wsrep_local_send_queue" => { None },
-            "wsrep_local_send_queue_max" => { None },
-            "wsrep_local_send_queue_min" => { None },
-            "wsrep_local_send_queue_avg" => { None },
-            "wsrep_local_recv_queue" => { None },
-            "wsrep_local_recv_queue_max" => { None },
-            "wsrep_local_recv_queue_min" => { None },
-            "wsrep_local_recv_queue_avg" => { None },
-            "wsrep_local_cached_downto" => { None },
-            "wsrep_flow_control_paused_ns" => { None },
-            "wsrep_flow_control_paused" => { None },
-            "wsrep_flow_control_sent" => { None },
-            "wsrep_flow_control_recv" => { None },
-            "wsrep_cert_deps_distance" => { None },
-            "wsrep_apply_oooe" => { None },
-            "wsrep_apply_oool" => { None },
-            "wsrep_apply_window" => { None },
-            "wsrep_commit_oooe" => { None },
-            "wsrep_commit_oool" => { None },
-            "wsrep_commit_window" => { None },
-            "wsrep_local_state" => { None },
-            "wsrep_local_state_comment" => { None },
-            "wsrep_cert_index_size" => { None },
-            "wsrep_cert_bucket_count" => { None },
-            "wsrep_gcache_pool_size" => { None },
-            "wsrep_causal_reads" => { None },
-            "wsrep_cert_interval" => { None },
+            name @ "wsrep_protocol_version" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_last_committed" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_replicated" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_replicated_bytes" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_repl_keys" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_repl_keys_bytes" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_repl_data_bytes" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_repl_other_bytes" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_received" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_received_bytes" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_local_commits" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_local_cert_failures" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_local_replays" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_local_send_queue" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_local_send_queue_max" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_local_send_queue_min" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_local_send_queue_avg" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_local_recv_queue" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_local_recv_queue_max" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_local_recv_queue_min" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_local_recv_queue_avg" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_local_cached_downto" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_flow_control_paused_ns" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_flow_control_paused" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_flow_control_sent" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_flow_control_recv" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_cert_deps_distance" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_apply_oooe" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_apply_oool" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_apply_window" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_commit_oooe" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_commit_oool" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_commit_window" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_local_state" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            // Ignore: Just the human readable version of 'wsrep_local_state'
+            name @ "wsrep_local_state_comment" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_cert_index_size" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_cert_bucket_count" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_gcache_pool_size" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_causal_reads" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_cert_interval" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            // Ignore: IP addresses of cluster memberes
             "wsrep_incoming_addresses" => { None },
-            "wsrep_desync_count" => { None },
+            name @ "wsrep_desync_count" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            // Ignore: Was "" in example ?!
             "wsrep_evs_delayed" => { None },
+            // Ignore: Was "" in example ?!
             "wsrep_evs_evict_list" => { None },
+            // Ignore: unclear
             "wsrep_evs_repl_latency" => { None },
-            "wsrep_evs_state" => { None },
-            "wsrep_gcomm_uuid" => { None },
-            "wsrep_cluster_conf_id" => { None },
-            "wsrep_cluster_size" => { None },
-            "wsrep_cluster_state_uuid" => { None },
-            "wsrep_cluster_status" => {
+            name @ "wsrep_evs_state" => {
+                // TODO: Handle other states but only primary
+                let value = match status.value.clone().to_lowercase().as_ref() {
+                    "operational" => 0,
+                    _ => 1,
+                };
+                let metric_name = name_to_metric(&name);
+                Some(Sample::new(metric_name, value))
+            }
+            name @ "wsrep_gcomm_uuid" => {
+                value_uuid_to_decimal(&name, &status.value)
+            },
+            name @ "wsrep_cluster_conf_id" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_cluster_size" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_cluster_state_uuid" => {
+                value_uuid_to_decimal(&name, &status.value)
+            },
+            name @ "wsrep_cluster_status" => {
+                // TODO: Handle other states but only primary
                 let value = match status.value.clone().to_lowercase().as_ref() {
                     "primary" => 0,
                     _ => 1,
                 };
+                let metric_name = name_to_metric(&name);
                 Some(Sample::new(metric_name, value))
             },
-            "wsrep_connected" => { None },
-            "wsrep_local_bf_aborts" => { None },
-            "wsrep_local_index" => { None },
+            name @ "wsrep_connected" => {
+                let metric_name = name_to_metric(&name);
+                match status.value.clone().to_lowercase().as_ref() {
+                    "on" => {
+                        Some(Sample::new(metric_name, 0))
+                    },
+                    "off" => {
+                        Some(Sample::new(metric_name, 1))
+                    },
+                    value => {
+                        error! ("Failed to parse 'wsrep_connected', because '{}' is an unexpected value.", value);
+                        None
+                    }
+                }
+            },
+            name @ "wsrep_local_bf_aborts" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            name @ "wsrep_local_index" => {
+                value_number_to_f64(&name, &status.value)
+            },
+            // Ignore
             "wsrep_provider_name" => { None },
+            // Ignore
             "wsrep_provider_vendor" => { None },
+            // Ignore
             "wsrep_provider_version" => { None },
-            "wsrep_ready" => { None },
+            name @ "wsrep_ready" => {
+                let metric_name = name_to_metric(&name);
+                match status.value.clone().to_lowercase().as_ref() {
+                    "on" => {
+                        Some(Sample::new(metric_name, 0))
+                    },
+                    "off" => {
+                        Some(Sample::new(metric_name, 1))
+                    },
+                    value => {
+                        error! ("Failed to parse 'wsrep_ready', because '{}' is an unexpected value.", value);
+                        None
+                    }
+                }
+            },
             x => {
-                warn!("Galera collector found new wsrep status '{}'.", x);
+                warn! ("Galera collector found new wsrep status '{}'.", x);
                 None
             }
         }
@@ -220,245 +390,142 @@ impl ConvertToMetric for Vec<WsrepStatus> {
 
 #[cfg(test)]
 mod tests {
-    use super::galera::WsrepStatus;
+    use super::{WsrepStatus, ConvertToMetric};
+    use bosun::Sample;
 
+    impl PartialEq for Sample {
+        fn eq(&self, other: &Sample) -> bool {
+            if self.metric == other.metric &&
+                self.value == other.value {
+                return true
+            }
+            false
+        }
+    }
+
+    #[test]
+    fn convert_correct_test_data() -> () {
+        let test_data = generate_test_data();
+
+        let metric_data = test_data.convert_to_metric();
+
+        assert_eq!(metric_data, vec ! [
+            Sample::new( "galera.wsrep.local.state.uuid", 223231124026558f64 ),
+            Sample::new( "galera.wsrep.protocol.version", 7 ),
+            Sample::new( "galera.wsrep.last.committed", 15156 ),
+            Sample::new( "galera.wsrep.replicated", 27 ),
+            Sample::new( "galera.wsrep.replicated.bytes", 12308 ),
+            Sample::new( "galera.wsrep.repl.keys", 172 ),
+            Sample::new( "galera.wsrep.repl.keys.bytes", 1997 ),
+            Sample::new( "galera.wsrep.repl.data.bytes", 8583 ),
+            Sample::new( "galera.wsrep.repl.other.bytes", 0 ),
+            Sample::new( "galera.wsrep.received", 14 ),
+            Sample::new( "galera.wsrep.received.bytes", 4893 ),
+            Sample::new( "galera.wsrep.local.commits", 25 ),
+            Sample::new( "galera.wsrep.local.cert.failures", 0 ),
+            Sample::new( "galera.wsrep.local.replays", 0 ),
+            Sample::new( "galera.wsrep.local.send.queue", 0 ),
+            Sample::new( "galera.wsrep.local.send.queue.max", 1 ),
+            Sample::new( "galera.wsrep.local.send.queue.min", 0 ),
+            Sample::new( "galera.wsrep.local.send.queue.avg", 0 ),
+            Sample::new( "galera.wsrep.local.recv.queue", 0 ),
+            Sample::new( "galera.wsrep.local.recv.queue.max", 1 ),
+            Sample::new( "galera.wsrep.local.recv.queue.min", 0 ),
+            Sample::new( "galera.wsrep.local.recv.queue.avg", 0 ),
+            Sample::new( "galera.wsrep.local.cached.downto", 15122 ),
+            Sample::new( "galera.wsrep.flow.control.paused.ns", 0 ),
+            Sample::new( "galera.wsrep.flow.control.paused", 0 ),
+            Sample::new( "galera.wsrep.flow.control.sent", 0 ),
+            Sample::new( "galera.wsrep.flow.control.recv", 0 ),
+            Sample::new( "galera.wsrep.cert.deps.distance", 3.114286 ),
+            Sample::new( "galera.wsrep.apply.oooe", 0 ),
+            Sample::new( "galera.wsrep.apply.oool", 0 ),
+            Sample::new( "galera.wsrep.apply.window", 1 ),
+            Sample::new( "galera.wsrep.commit.oooe", 0 ),
+            Sample::new( "galera.wsrep.commit.oool", 0 ),
+            Sample::new( "galera.wsrep.commit.window", 1 ),
+            Sample::new( "galera.wsrep.local.state", 4 ),
+            Sample::new( "galera.wsrep.cert.index.size", 47 ),
+            Sample::new( "galera.wsrep.cert.bucket.count", 58 ),
+            Sample::new( "galera.wsrep.gcache.pool.size", 18605 ),
+            Sample::new( "galera.wsrep.causal.reads", 0 ),
+            Sample::new( "galera.wsrep.cert.interval", 0 ),
+            Sample::new( "galera.wsrep.desync.count", 0 ),
+            Sample::new( "galera.wsrep.evs.state", 0 ),
+            Sample::new( "galera.wsrep.gcomm.uuid", 61013330952311f64 ),
+            Sample::new( "galera.wsrep.cluster.conf.id", 21 ),
+            Sample::new( "galera.wsrep.cluster.size", 3 ),
+            Sample::new( "galera.wsrep.cluster.state.uuid", 223231124026558f64 ),
+            Sample::new( "galera.wsrep.cluster.status", 0 ),
+            Sample::new( "galera.wsrep.connected", 0 ),
+            Sample::new( "galera.wsrep.local.bf.aborts", 0 ),
+            Sample::new( "galera.wsrep.local.index", 0 ),
+            Sample::new( "galera.wsrep.ready", 0 )
+        ]);
+    }
 
     fn generate_test_data() -> Vec<WsrepStatus> {
-        vec![WsrepStatus {
-                 name: "wsrep_local_state_uuid",
-                 value: "5a62afb9-7f4a-11e6-a433-cb070bd9b4be",
-             },
-             WsrepStatus {
-                 name: "wsrep_protocol_version",
-                 value: "7",
-             },
-             WsrepStatus {
-                 name: "wsrep_last_committed",
-                 value: "15156",
-             },
-             WsrepStatus {
-                 name: "wsrep_replicated",
-                 value: "27",
-             },
-             WsrepStatus {
-                 name: "wsrep_replicated_bytes",
-                 value: "12308",
-             },
-             WsrepStatus {
-                 name: "wsrep_repl_keys",
-                 value: "172",
-             },
-             WsrepStatus {
-                 name: "wsrep_repl_keys_bytes",
-                 value: "1997",
-             },
-             WsrepStatus {
-                 name: "wsrep_repl_data_bytes",
-                 value: "8583",
-             },
-             WsrepStatus {
-                 name: "wsrep_repl_other_bytes",
-                 value: "0",
-             },
-             WsrepStatus {
-                 name: "wsrep_received",
-                 value: "14",
-             },
-             WsrepStatus {
-                 name: "wsrep_received_bytes",
-                 value: "4893",
-             },
-             WsrepStatus {
-                 name: "wsrep_local_commits",
-                 value: "25",
-             },
-             WsrepStatus {
-                 name: "wsrep_local_cert_failures",
-                 value: "0",
-             },
-             WsrepStatus {
-                 name: "wsrep_local_replays",
-                 value: "0",
-             },
-             WsrepStatus {
-                 name: "wsrep_local_send_queue",
-                 value: "0",
-             },
-             WsrepStatus {
-                 name: "wsrep_local_send_queue_max",
-                 value: "1",
-             },
-             WsrepStatus {
-                 name: "wsrep_local_send_queue_min",
-                 value: "0",
-             },
-             WsrepStatus {
-                 name: "wsrep_local_send_queue_avg",
-                 value: "0.000000",
-             },
-             WsrepStatus {
-                 name: "wsrep_local_recv_queue",
-                 value: "0",
-             },
-             WsrepStatus {
-                 name: "wsrep_local_recv_queue_max",
-                 value: "1",
-             },
-             WsrepStatus {
-                 name: "wsrep_local_recv_queue_min",
-                 value: "0",
-             },
-             WsrepStatus {
-                 name: "wsrep_local_recv_queue_avg",
-                 value: "0.000000",
-             },
-             WsrepStatus {
-                 name: "wsrep_local_cached_downto",
-                 value: "15122",
-             },
-             WsrepStatus {
-                 name: "wsrep_flow_control_paused_ns",
-                 value: "0",
-             },
-             WsrepStatus {
-                 name: "wsrep_flow_control_paused",
-                 value: "0.000000",
-             },
-             WsrepStatus {
-                 name: "wsrep_flow_control_sent",
-                 value: "0",
-             },
-             WsrepStatus {
-                 name: "wsrep_flow_control_recv",
-                 value: "0",
-             },
-             WsrepStatus {
-                 name: "wsrep_cert_deps_distance",
-                 value: "3.114286",
-             },
-             WsrepStatus {
-                 name: "wsrep_apply_oooe",
-                 value: "0.000000",
-             },
-             WsrepStatus {
-                 name: "wsrep_apply_oool",
-                 value: "0.000000",
-             },
-             WsrepStatus {
-                 name: "wsrep_apply_window",
-                 value: "1.000000",
-             },
-             WsrepStatus {
-                 name: "wsrep_commit_oooe",
-                 value: "0.000000",
-             },
-             WsrepStatus {
-                 name: "wsrep_commit_oool",
-                 value: "0.000000",
-             },
-             WsrepStatus {
-                 name: "wsrep_commit_window",
-                 value: "1.000000",
-             },
-             WsrepStatus {
-                 name: "wsrep_local_state",
-                 value: "4",
-             },
-             WsrepStatus {
-                 name: "wsrep_local_state_comment",
-                 value: "Synced",
-             },
-             WsrepStatus {
-                 name: "wsrep_cert_index_size",
-                 value: "47",
-             },
-             WsrepStatus {
-                 name: "wsrep_cert_bucket_count",
-                 value: "58",
-             },
-             WsrepStatus {
-                 name: "wsrep_gcache_pool_size",
-                 value: "18605",
-             },
-             WsrepStatus {
-                 name: "wsrep_causal_reads",
-                 value: "0",
-             },
-             WsrepStatus {
-                 name: "wsrep_cert_interval",
-                 value: "0.000000",
-             },
-             WsrepStatus {
-                 name: "wsrep_incoming_addresses",
-                 value: "192.168.205.46:3306,192.168.205.47:3306,192.168.205.48:3306",
-             },
-             WsrepStatus {
-                 name: "wsrep_desync_count",
-                 value: "0",
-             },
-             WsrepStatus {
-                 name: "wsrep_evs_delayed",
-                 value: "",
-             },
-             WsrepStatus {
-                 name: "wsrep_evs_evict_list",
-                 value: "",
-             },
-             WsrepStatus {
-                 name: "wsrep_evs_repl_latency",
-                 value: "0/0/0/0/0",
-             },
-             WsrepStatus {
-                 name: "wsrep_evs_state",
-                 value: "OPERATIONAL",
-             },
-             WsrepStatus {
-                 name: "wsrep_gcomm_uuid",
-                 value: "49329803-8175-11e6-ac89-377dc5eb0077",
-             },
-             WsrepStatus {
-                 name: "wsrep_cluster_conf_id",
-                 value: "21",
-             },
-             WsrepStatus {
-                 name: "wsrep_cluster_size",
-                 value: "3",
-             },
-             WsrepStatus {
-                 name: "wsrep_cluster_state_uuid",
-                 value: "5a62afb9-7f4a-11e6-a433-cb070bd9b4be",
-             },
-             WsrepStatus {
-                 name: "wsrep_cluster_status",
-                 value: "Primary",
-             },
-             WsrepStatus {
-                 name: "wsrep_connected",
-                 value: "ON",
-             },
-             WsrepStatus {
-                 name: "wsrep_local_bf_aborts",
-                 value: "0",
-             },
-             WsrepStatus {
-                 name: "wsrep_local_index",
-                 value: "0",
-             },
-             WsrepStatus {
-                 name: "wsrep_provider_name",
-                 value: "Galera",
-             },
-             WsrepStatus {
-                 name: "wsrep_provider_vendor",
-                 value: "Codership Oy <info@codership.com>",
-             },
-             WsrepStatus {
-                 name: "wsrep_provider_version",
-                 value: "3.16(r5c765eb)",
-             },
-             WsrepStatus {
-                 name: "wsrep_ready",
-                 value: "ON",
-             }]
+        vec![
+            WsrepStatus::new( "wsrep_local_state_uuid", "5a62afb9-7f4a-11e6-a433-cb070bd9b4be" ),
+            WsrepStatus::new( "wsrep_protocol_version", "7" ),
+            WsrepStatus::new( "wsrep_last_committed", "15156" ),
+            WsrepStatus::new( "wsrep_replicated", "27" ),
+            WsrepStatus::new( "wsrep_replicated_bytes", "12308" ),
+            WsrepStatus::new( "wsrep_repl_keys", "172" ),
+            WsrepStatus::new( "wsrep_repl_keys_bytes", "1997" ),
+            WsrepStatus::new( "wsrep_repl_data_bytes", "8583" ),
+            WsrepStatus::new( "wsrep_repl_other_bytes", "0" ),
+            WsrepStatus::new( "wsrep_received", "14" ),
+            WsrepStatus::new( "wsrep_received_bytes", "4893" ),
+            WsrepStatus::new( "wsrep_local_commits", "25" ),
+            WsrepStatus::new( "wsrep_local_cert_failures", "0" ),
+            WsrepStatus::new( "wsrep_local_replays", "0" ),
+            WsrepStatus::new( "wsrep_local_send_queue", "0" ),
+            WsrepStatus::new( "wsrep_local_send_queue_max", "1" ),
+            WsrepStatus::new( "wsrep_local_send_queue_min", "0" ),
+            WsrepStatus::new( "wsrep_local_send_queue_avg", "0.000000" ),
+            WsrepStatus::new( "wsrep_local_recv_queue", "0" ),
+            WsrepStatus::new( "wsrep_local_recv_queue_max", "1" ),
+            WsrepStatus::new( "wsrep_local_recv_queue_min", "0" ),
+            WsrepStatus::new( "wsrep_local_recv_queue_avg", "0.000000" ),
+            WsrepStatus::new( "wsrep_local_cached_downto", "15122" ),
+            WsrepStatus::new( "wsrep_flow_control_paused_ns", "0" ),
+            WsrepStatus::new( "wsrep_flow_control_paused", "0.000000" ),
+            WsrepStatus::new( "wsrep_flow_control_sent", "0" ),
+            WsrepStatus::new( "wsrep_flow_control_recv", "0" ),
+            WsrepStatus::new( "wsrep_cert_deps_distance", "3.114286" ),
+            WsrepStatus::new( "wsrep_apply_oooe", "0.000000" ),
+            WsrepStatus::new( "wsrep_apply_oool", "0.000000" ),
+            WsrepStatus::new( "wsrep_apply_window", "1.000000" ),
+            WsrepStatus::new( "wsrep_commit_oooe", "0.000000" ),
+            WsrepStatus::new( "wsrep_commit_oool", "0.000000" ),
+            WsrepStatus::new( "wsrep_commit_window", "1.000000" ),
+            WsrepStatus::new( "wsrep_local_state", "4" ),
+            WsrepStatus::new( "wsrep_local_state_comment", "Synced" ),
+            WsrepStatus::new( "wsrep_cert_index_size", "47" ),
+            WsrepStatus::new( "wsrep_cert_bucket_count", "58" ),
+            WsrepStatus::new( "wsrep_gcache_pool_size", "18605" ),
+            WsrepStatus::new( "wsrep_causal_reads", "0" ),
+            WsrepStatus::new( "wsrep_cert_interval", "0.000000" ),
+            WsrepStatus::new( "wsrep_incoming_addresses", "192.168.205.46:3306,192.168.205.47:3306,192.168.205.48:3306" ),
+            WsrepStatus::new( "wsrep_desync_count", "0" ),
+            WsrepStatus::new( "wsrep_evs_delayed", "" ),
+            WsrepStatus::new( "wsrep_evs_evict_list", "" ),
+            WsrepStatus::new( "wsrep_evs_repl_latency", "0/0/0/0/0" ),
+            WsrepStatus::new( "wsrep_evs_state", "OPERATIONAL" ),
+            WsrepStatus::new( "wsrep_gcomm_uuid", "49329803-8175-11e6-ac89-377dc5eb0077" ),
+            WsrepStatus::new( "wsrep_cluster_conf_id", "21" ),
+            WsrepStatus::new( "wsrep_cluster_size", "3" ),
+            WsrepStatus::new( "wsrep_cluster_state_uuid", "5a62afb9-7f4a-11e6-a433-cb070bd9b4be" ),
+            WsrepStatus::new( "wsrep_cluster_status", "Primary" ),
+            WsrepStatus::new( "wsrep_connected", "ON" ),
+            WsrepStatus::new( "wsrep_local_bf_aborts", "0" ),
+            WsrepStatus::new( "wsrep_local_index", "0" ),
+            WsrepStatus::new( "wsrep_provider_name", "Galera" ),
+            WsrepStatus::new( "wsrep_provider_vendor", "Codership Oy <info@codership.com>" ),
+            WsrepStatus::new( "wsrep_provider_version", "3.16(r5c765eb )" ),
+            WsrepStatus::new( "wsrep_ready", "ON" )
+        ]
     }
 }
+

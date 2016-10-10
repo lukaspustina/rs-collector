@@ -43,7 +43,7 @@ Hostname = "webserver"
 [Galera]
   User = "root"
   Password = "toor"
-  URL = "/var/lib/mysql.sock"
+  Socket = "/var/lib/mysql.sock"
 "#;
     let temp_file_path = create_temp_config_file_from_string(rs_collector_toml);
     let config = Config::load_from_rs_collector_config(&temp_file_path).unwrap();
@@ -56,9 +56,10 @@ Hostname = "webserver"
     assert_eq!(config.Galera.is_some(), true);
 
     let galera = config.Galera.unwrap();
-    assert_eq!(galera.User, "root");
-    assert_eq!(galera.Password, "toor");
-    assert_eq!(galera.URL, "/var/lib/mysql.sock");
+    assert_eq!(galera.User.unwrap(), "root");
+    assert_eq!(galera.Password.unwrap(), "toor");
+    assert_eq!(galera.Host.is_none(), true);
+    assert_eq!(galera.Socket.unwrap(), "/var/lib/mysql.sock");
 }
 
 fn create_temp_config_file_from_string(content: &str) -> PathBuf {

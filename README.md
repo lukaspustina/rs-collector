@@ -11,8 +11,8 @@
     of log rotation. Skipping this for now.
 
 1. [x] Transform all wsrep values to metrics
-1. [ ] Add metadata for all wsrep values
-1. [ ] Check additional state for metrics
+1. [x] Add metadata for all wsrep values
+1. [x] Check additional state for metrics
 1. [ ] Handle tags
 1. [ ] Automate packaging for Ubuntu
 1. [ ] Tests

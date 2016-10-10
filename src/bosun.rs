@@ -1,4 +1,5 @@
 use bosun_emitter::{BosunClient, Datum, Tags};
+use bosun_emitter;
 use chan::Receiver;
 use chan;
 use std::thread::JoinHandle;
@@ -7,6 +8,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 static TICK_INTERVAL_SEC: u64 = 15u64;
 
+// TODO: Replace with Bosun::Datum
 #[derive(Debug)]
 pub struct Sample {
     pub time: u64,
@@ -22,9 +24,45 @@ impl Sample {
     }
 }
 
+pub enum Rate {
+    Gauge,
+    Counter,
+    Rate,
+}
+
+impl Into<String> for Rate {
+    fn into(self) -> String {
+        match self {
+            Rate::Gauge => "gauge".to_string(),
+            Rate::Counter => "counter".to_string(),
+            Rate::Rate => "rate".to_string(),
+        }
+    }
+}
+
+// TODO: Replace with Bosun::Metadata
+#[derive(Debug)]
+pub struct Metadata {
+    /// Metric name
+    pub metric: String,
+    /// Metric rate type: [gauge, counter, rate]
+    pub rate: String,
+    /// Metric unit
+    pub unit: String,
+    /// Metric description
+    pub description: String,
+}
+
+impl Metadata {
+    pub fn new<T: Into<String>>( metric: T, rate: Rate, unit: T, description: T ) -> Self {
+        Metadata { metric: metric.into(), rate: rate.into(), unit: unit.into(), description: description.into() }
+    }
+}
+
 #[derive(Debug)]
 pub enum BosunRequest {
     Sample(Sample),
+    Metadata(Metadata),
     Shutdown,
 }
 
@@ -75,6 +113,18 @@ impl Bosun {
                     },
                     from_main_rx.recv() -> msg => {
                         match msg {
+                            Some(BosunRequest::Metadata(metadata)) => {
+                                debug!("Received new metadata '{}'.", &metadata.metric);
+                                let m = bosun_emitter::Metadata {
+                                    metric: &metadata.metric, rate: &metadata.rate,
+                                    unit: &metadata.unit, description: &metadata.description };
+                                match self.bosun_client.emit_metadata(&m) {
+                                    Ok(_) => {},
+                                    Err(err) => {
+                                        error!("Failed to send metadata '{:?}' to Bosun, because {:?}", &m, err);
+                                    }
+                                }
+                            }
                             Some(BosunRequest::Sample(sample)) => {
                                 debug!("Received new sample '{}'.", sample.time);
                                 self.queue.push(sample);

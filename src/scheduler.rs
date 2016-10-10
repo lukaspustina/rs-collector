@@ -13,7 +13,7 @@ use std::time::Duration;
 use config::Config;
 use collectors::Collector;
 use collectors::Id;
-use bosun::{Bosun, BosunRequest, Sample};
+use bosun::{Bosun, BosunRequest, Metadata, Sample};
 
 pub fn run(collectors: Vec<Box<Collector + Send>>, config: &Config) -> () {
     let signal = chan_signal::notify(&[Signal::INT, Signal::TERM]);
@@ -47,13 +47,15 @@ static TICK_INTERVAL_SEC: u64 = 15u64;
 #[derive(Debug)]
 enum CollectorRequest {
     Helo,
-    Shutdown,
+    Metadata,
     Sample,
+    Shutdown,
 }
 
 #[derive(Debug)]
 enum CollectorResponse {
     Id(Id),
+    Metadata(Metadata),
     Sample(Sample),
 }
 
@@ -116,6 +118,10 @@ impl CollectorRunner {
                         debug!("CollectorRunner {} received 'Helo' message.", &self.id);
                         self.controller_tx.send(CollectorResponse::Id(self.id.clone()));
                     }
+                    Some(CollectorRequest::Metadata) => {
+                        debug!("CollectorRunner {} received 'Metadata' message.", &self.id);
+                        self.collect_metadata();
+                    }
                     Some(CollectorRequest::Sample) => {
                         debug!("CollectorRunner {} received 'Sample' message.", &self.id);
                         self.collect_sample();
@@ -135,6 +141,30 @@ impl CollectorRunner {
             }
             info!("CollectorRunner {} thread finished.", self.id);
         })
+    }
+
+    fn collect_metadata(&mut self) {
+        let collector = self.collector.clone();
+        let lock = collector.try_lock();
+        match lock {
+            Ok(_) => {
+                let id = self.id.clone();
+                let tx = self.controller_tx.clone();
+                let collector = self.collector.clone();
+                thread::spawn(move || {
+                    debug!("CollectorRunner {} spawned metadata thread.", &id);
+                    let ref collector = *collector.lock().unwrap();
+                    let metadata = collector.metadata();
+                    for m in metadata.into_iter() {
+                        tx.send(CollectorResponse::Metadata(m));
+                    }
+                    debug!("CollectorRunner {} finished metadata thread.", &id);
+                });
+            }
+            Err(_) => {
+                trace!("CollectorRunner {} metadata already running ...", &self.id);
+            }
+        }
     }
 
     fn collect_sample(&mut self) {
@@ -200,6 +230,13 @@ fn event_loop(threads: &Vec<CollectorController>,
               bosun_tx: &Sender<BosunRequest>)
               -> () {
     info!("Scheduler thread entering event loop.");
+
+    // TODO: This should not be here.
+    // Transmit metadata once.
+    for cc in threads.iter() {
+        cc.runner_tx.send(CollectorRequest::Metadata)
+    }
+
     loop {
         debug!("Scheduler thread event loop.");
         chan_select! {
@@ -216,6 +253,10 @@ fn event_loop(threads: &Vec<CollectorController>,
                 match message {
                     Some(CollectorResponse::Id(id)) => {
                         debug!("Scheduler received 'Helo' from collector {}.", id);
+                    }
+                    Some(CollectorResponse::Metadata(metadata)) => {
+                        debug!("Scheduler received metadata for '{}'.", &metadata.metric );
+                        bosun_tx.send(BosunRequest::Metadata(metadata));
                     }
                     Some(CollectorResponse::Sample(sample)) => {
                         debug!("Scheduler received sample {}.", sample.time);

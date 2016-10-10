@@ -2,7 +2,7 @@
 
 use mysql as my;
 
-use bosun::Sample;
+use bosun::{Metadata, Rate, Sample};
 use collectors::*;
 use config::Config;
 use utils;
@@ -49,6 +49,7 @@ pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
     }
 }
 
+
 impl From<Galera> for my::Opts {
     fn from(config: Galera) -> Self {
         let mut optsbuilder: my::OptsBuilder = my::OptsBuilder::new();
@@ -94,7 +95,81 @@ impl Collector for Galera {
 
         metric_data
     }
+
     fn shutdown(&self) {}
+
+    fn metadata(&self) -> Vec<Metadata> {
+        vec![
+            Metadata::new( "galera.wsrep.local.state.uuid", Rate::Gauge, "",
+                "Shows the cluster state UUID, which you can use to determine whether the node is part of the cluster." ),
+            Metadata::new( "galera.wsrep.protocol.version", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.last.committed", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.replicated", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.replicated.bytes", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.repl.keys", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.repl.keys.bytes", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.repl.data.bytes", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.repl.other.bytes", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.received", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.received.bytes", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.local.commits", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.local.cert.failures", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.local.replays", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.local.send.queue", Rate::Gauge, "Length",
+                "Show the send queue length." ),
+            Metadata::new( "galera.wsrep.local.send.queue.max", Rate::Gauge, "Length",
+                "Show the max queue length since the last status query." ),
+            Metadata::new( "galera.wsrep.local.send.queue.min", Rate::Gauge, "Length",
+               "Show the min queue length since the last status query." ),
+            Metadata::new( "galera.wsrep.local.send.queue.avg", Rate::Gauge, "Length",
+                "Show an average for the send queue length since the last status query." ),
+            Metadata::new( "galera.wsrep.local.recv.queue", Rate::Gauge, "Length",
+                "Shows the size of the local received queue since the last status query." ),
+            Metadata::new( "galera.wsrep.local.recv.queue.max", Rate::Gauge, "Length",
+                "Shows the max size of the local received queue since the last status query." ),
+            Metadata::new( "galera.wsrep.local.recv.queue.min", Rate::Gauge, "Length",
+                "Shows the min size of the local received queue since the last status query." ),
+            Metadata::new( "galera.wsrep.local.recv.queue.avg", Rate::Gauge, "Length",
+                "Shows the average size of the local received queue since the last status query." ),
+            Metadata::new( "galera.wsrep.local.cached.downto", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.flow.control.paused.ns", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.flow.control.paused", Rate::Gauge, "Fraction",
+                "Shows the fraction of the time, since the status variable was last called, that the node paused due to Flow Control." ),
+            Metadata::new( "galera.wsrep.flow.control.sent", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.flow.control.recv", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.cert.deps.distance", Rate::Gauge, "Distance",
+                "Shows the average distance between the lowest and highest sequence number, or seqno, values that the node can possibly apply in parallel." ),
+            Metadata::new( "galera.wsrep.apply.oooe", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.apply.oool", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.apply.window", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.commit.oooe", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.commit.oool", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.commit.window", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.local.state", Rate::Gauge, "State",
+                "Shows the node state; the desired state is 'synced'. [1 = Primary, 2 = Joiner, 3 = Joined, 4 = Synced, 5 = Donor]" ),
+            Metadata::new( "galera.wsrep.cert.index.size", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.cert.bucket.count", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.gcache.pool.size", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.causal.reads", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.cert.interval", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.desync.count", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.evs.state", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.gcomm.uuid", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.cluster.conf.id", Rate::Gauge, "changes",
+                "Shows the total number of cluster changes that have happened, which you can use to determine whether or not the node is a part of the Primary Component." ),
+            Metadata::new( "galera.wsrep.cluster.size", Rate::Gauge, "nodes",
+                "Shows the number of nodes in the cluster, which you can use to determine if any are missing." ),
+            Metadata::new( "galera.wsrep.cluster.state.uuid", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.cluster.status", Rate::Gauge, "Status",
+                "Shows the primary status of the cluster component that the node is in, which you can use in determining whether your cluster is experiencing a partition. Possible values are [0 = Primary, 1 = Node is part of a nonoperational component.]" ),
+            Metadata::new( "galera.wsrep.connected", Rate::Gauge, "",
+                "Shows whether the node has network connectivity with any other nodes. [0 = On, 1 = Off]" ),
+            Metadata::new( "galera.wsrep.local.bf.aborts", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.local.index", Rate::Gauge, "", "" ),
+            Metadata::new( "galera.wsrep.ready", Rate::Gauge, "",
+                "Shows whether the node can accept queries. [0 = On, 1 = Off]" ),
+        ]
+    }
 }
 
 

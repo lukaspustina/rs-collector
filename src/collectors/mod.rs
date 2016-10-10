@@ -1,4 +1,4 @@
-use bosun::Sample;
+use bosun::{Metadata, Sample};
 use config::Config;
 
 
@@ -16,10 +16,13 @@ pub trait Collector {
     fn id(&self) -> &Id;
     fn collect(&self) -> Vec<Sample>;
     fn shutdown(&self);
+    fn metadata(&self) -> Vec<Metadata>;
 }
 
 pub fn create_collectors(config: &Config) -> Vec<Box<Collector + Send>> {
     let mut collectors = Vec::new();
+
+    // Create Galera collector instances
     let mut galeras = galera::create_instances(config);
     collectors.append(&mut galeras);
 

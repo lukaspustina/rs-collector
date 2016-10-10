@@ -252,9 +252,7 @@ impl From<WsrepStatus> for Option<Sample> {
                 value_number_to_f64(&name, &status.value)
             },
             // Ignore: Just the human readable version of 'wsrep_local_state'
-            name @ "wsrep_local_state_comment" => {
-                value_number_to_f64(&name, &status.value)
-            },
+            "wsrep_local_state_comment" => { None },
             name @ "wsrep_cert_index_size" => {
                 value_number_to_f64(&name, &status.value)
             },

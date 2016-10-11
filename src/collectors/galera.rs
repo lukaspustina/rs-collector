@@ -146,7 +146,7 @@ impl Collector for Galera {
             Metadata::new( "galera.wsrep.commit.oool", Rate::Gauge, "", "" ),
             Metadata::new( "galera.wsrep.commit.window", Rate::Gauge, "", "" ),
             Metadata::new( "galera.wsrep.local.state", Rate::Gauge, "State",
-                "Shows the node state; the desired state is 'synced'. [1 = Primary, 2 = Joiner, 3 = Joined, 4 = Synced, 5 = Donor]" ),
+                "Shows the node state; the desired state is 'synced'. [1 = Joining (requesting/receiving State Transfer) - node is joining the cluster, 2 = Donor/Desynced - node is the donor to the node joining the cluster, 3 = Joined - node has joined the cluster, 4 = Synced - node is synced with the cluster]" ),
             Metadata::new( "galera.wsrep.cert.index.size", Rate::Gauge, "", "" ),
             Metadata::new( "galera.wsrep.cert.bucket.count", Rate::Gauge, "", "" ),
             Metadata::new( "galera.wsrep.gcache.pool.size", Rate::Gauge, "", "" ),

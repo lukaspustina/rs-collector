@@ -15,7 +15,7 @@
 - [x] Handle tags
 - [x] Automate packaging for Ubuntu
   - [x] Ansible Role
-  - [x] Update Readme: Link to package and Ansible role
+  - [ ] Update Readme: Link to package and Ansible role
 - [ ] Failure Modes
   - [ ] Reinitialize collector if collection fails.
     - [ ] Reconnect Logic for Galera Collector
@@ -27,7 +27,11 @@
 - [ ] Add internal metrics `rs-collector.*`
 
 
+## Releases
+
+Travis CI creates Ubuntu Trusty packages for each release. Please see the [Repository](https://packagecloud.io/lukaspustina/opensource) for details.
+
 ## Installation
 
-There is an Ansile role available at [Ansible Galaxy](https://galaxy.ansible.com/Rheinwerk/rs_collector/) that automates the installation of rs-collector.
+There is also an Ansile role available at [Ansible Galaxy](https://galaxy.ansible.com/Rheinwerk/rs_collector/) that automates the installation of rs-collector.
 

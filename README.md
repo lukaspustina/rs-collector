@@ -17,6 +17,8 @@
 1. [x] Check additional state for metrics
 1. [x] Handle tags
 1. [ ] Automate packaging for Ubuntu
+  1. [ ] Ansible Role
+  1. [ ] Update Readme: Link to package and Ansible role
 1. [ ] Tests
 1. [ ] Extend bosun_emitter to send multiple data points
 1. [ ] Failure Modes

@@ -86,14 +86,14 @@ impl Collector for Galera {
         &self.id
     }
 
-    fn collect(&self) -> Vec<Sample> {
+    fn collect(&self) -> Result<Vec<Sample>, Error> {
         // TODO: make this safe -> if let / match
-        let wsrepstates: Vec<WsrepStatus> = query_wsrep_status(self.pool.as_ref().unwrap());
+        let wsrepstates: Vec<WsrepStatus> = try!(query_wsrep_status(self.pool.as_ref().unwrap()));
         trace!("wsrepstates = {:#?}", wsrepstates);
         let metric_data = wsrepstates.convert_to_metric();
         debug!("metric_data = {:#?}", metric_data);
 
-        metric_data
+        Ok(metric_data)
     }
 
     fn shutdown(&self) {}
@@ -434,19 +434,23 @@ impl From<WsrepStatus> for Option<Sample> {
     }
 }
 
-fn query_wsrep_status(pool: &my::Pool) -> Vec<WsrepStatus> {
-    let wsrepstates: Vec<WsrepStatus> = pool
-        .prep_exec("SHOW GLOBAL STATUS LIKE 'wsrep_%'", ())
-        .map(|result| {
-            result.map(|x| x.unwrap())
+fn query_wsrep_status(pool: &my::Pool) -> Result<Vec<WsrepStatus>, Error> {
+    let res = pool.prep_exec("SHOW GLOBAL STATUS LIKE 'wsrep_%'", ());
+    match res {
+        Ok(result) => {
+            let wsrep_states = result.map(|x| x.unwrap())
                 .map(|row| {
                     let (name, value): (String, String) = my::from_row(row);
                     WsrepStatus::new(name, value)
                 })
-                .collect()
-        })
-        .unwrap();
-    wsrepstates
+                .collect();
+            Ok(wsrep_states)
+        },
+        Err(error) => {
+            warn!("Failed to query Galera status, because {}", &error);
+            Err(Error::CollectionError(format!("{}", error)))
+        }
+    }
 }
 
 trait ConvertToMetric {

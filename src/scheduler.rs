@@ -13,7 +13,7 @@ use std::time::Duration;
 
 use Msg;
 use config::Config;
-use collectors::Collector;
+use collectors::{Collector, Error};
 use collectors::Id;
 use bosun::{Bosun, BosunRequest, Metadata, Sample};
 
@@ -49,6 +49,7 @@ static TICK_INTERVAL_SEC: u64 = 15u64;
 #[derive(Debug)]
 enum CollectorRequest {
     Helo,
+    Init,
     Metadata,
     Sample,
     Shutdown,
@@ -59,6 +60,7 @@ enum CollectorResponse {
     Id(Id),
     Metadata(Metadata),
     Sample(Sample),
+    CollectionError(Error)
 }
 
 /**
@@ -120,15 +122,33 @@ impl CollectorRunner {
                         debug!("CollectorRunner {} received 'Helo' message.", &self.id);
                         self.controller_tx.send(
                             Msg::Collector(self.id.clone(),CollectorResponse::Id(self.id.clone())));
-                    }
+                    },
+                    Some(CollectorRequest::Init) => {
+                        // TODO: Add failure management exp backoff timer to wait before reconnecting.
+                        let exp_backoff = 10;
+                        debug!("CollectorRunner {} received 'Init' message. Waiting {} sec.", &self.id, exp_backoff);
+                        thread::sleep(Duration::from_secs(exp_backoff));
+                        let collector = self.collector.clone();
+                        let mut collector = collector.lock().unwrap();
+                        match collector.init() {
+                            Ok(_) => {
+                                info!("CollectorRunner {} successfully re-initialized collector.", &self.id);
+                            },
+                            Err(_) => {
+                                error!("CollectorRunner {} failed to re-initialize collector. Shutting collector down.", &self.id);
+                                collector.shutdown();
+                                break;
+                            }
+                        }
+                    },
                     Some(CollectorRequest::Metadata) => {
                         debug!("CollectorRunner {} received 'Metadata' message.", &self.id);
                         self.collect_metadata();
-                    }
+                    },
                     Some(CollectorRequest::Sample) => {
                         debug!("CollectorRunner {} received 'Sample' message.", &self.id);
                         self.collect_sample();
-                    }
+                    },
                     Some(CollectorRequest::Shutdown) => {
                         debug!("CollectorRunner {} received 'Shutdown' message.", &self.id);
                         let collector = self.collector.clone();
@@ -137,10 +157,10 @@ impl CollectorRunner {
                         self.controller_tx.send(
                             Msg::Collector(self.id.clone(),CollectorResponse::Id(self.id.clone())));
                         break;
-                    }
+                    },
                     None => {
                         break;
-                    }
+                    },
                 }
             }
             info!("CollectorRunner {} thread finished.", self.id);
@@ -183,10 +203,19 @@ impl CollectorRunner {
                 thread::spawn(move || {
                     debug!("CollectorRunner {} spawned sample thread.", &id);
                     let ref collector = *collector.lock().unwrap();
-                    let samples = collector.collect();
-                    for s in samples.into_iter() {
-                        tx.send(
-                            Msg::Collector(id.clone(), CollectorResponse::Sample(s)));
+                    match collector.collect() {
+                        Ok(samples) => {
+                            for s in samples.into_iter() {
+                                tx.send(
+                                    Msg::Collector(id.clone(), CollectorResponse::Sample(s)));
+                            }
+                        },
+                        Err(error) => {
+                            warn!("CollectorResponse {} received collection error {}", &id, error);
+                            tx.send(
+                                Msg::Collector(id.clone(), CollectorResponse::CollectionError(error)));
+                        }
+
                     }
                     debug!("CollectorRunner {} finished sample thread.", &id);
                 });
@@ -268,7 +297,14 @@ fn event_loop(threads: &HashMap<String, CollectorController>,
                     Some(Msg::Collector(id, CollectorResponse::Sample(sample))) => {
                         debug!("Scheduler received sample from '{}' for '{}'.", &id, &sample.time );
                         bosun_tx.send(BosunRequest::Sample(sample));
-                    }
+                    },
+                    Some(Msg::Collector(id, CollectorResponse::CollectionError(error))) => {
+                        debug!("Scheduler received collection error from {} '{}'.", &id, &error);
+                        // TODO: Take care of failure case
+                        if let Some(cc) = threads.get(&id) {
+                            cc.runner_tx.send(CollectorRequest::Init);
+                        }
+                    },
                     None => {
                         error!("Channel unexpectedly shut down.");
                         break

@@ -16,9 +16,10 @@
 1. [x] Add metadata for all wsrep values
 1. [x] Check additional state for metrics
 1. [x] Handle tags
-1. [ ] Automate packaging for Ubuntu
-  1. [ ] Ansible Role
-  1. [ ] Update Readme: Link to package and Ansible role
+1. [x] Automate packaging for Ubuntu
+  1. [x] Ansible Role
+  1. [x] Update Readme: Link to package and Ansible role
+1. [ ] Reconnect Logic for Galera Collector
 1. [ ] Tests
 1. [ ] Extend bosun_emitter to send multiple data points
 1. [ ] Failure Modes
@@ -26,4 +27,10 @@
   1. Remove collector if dead
   1. Remove collector if too many collection failures
 1. [ ] Support multiple Galera Collectors -- also change in Ansible role
+1. [ ] Add internal metrics `rs-collector.*`
+
+
+## Installation
+
+There is an Ansile role available at [Ansible Galaxy](https://galaxy.ansible.com/Rheinwerk/rs_collector/) that automates the installation of rs-collector.
 

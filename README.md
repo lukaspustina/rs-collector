@@ -4,30 +4,27 @@
 
 ## Todo
 
-1. [x] Fix memory leak in chan::tick
-    cf. [https://github.com/BurntSushi/chan/issues/11](https://github.com/BurntSushi/chan/issues/11) and branch mem_leak_chan_tick.
+- [x] Fix memory leak in chan::tick
+  cf. [https://github.com/BurntSushi/chan/issues/11](https://github.com/BurntSushi/chan/issues/11) and branch mem_leak_chan_tick.
 
-    This is known behaviour of chan::tick. The memory leak led to 236 KB
-    allocated memory during 64 hours. That doesn't hurt too much
-    especially because we plan to restart the process every 24 because
-    of log rotation. Skipping this for now.
+  This is known behaviour of chan::tick. The memory leak led to 236 KB allocated memory during 64 hours. That doesn't hurt too much especially because we plan to restart the process every 24 because of log rotation. Skipping this for now.
 
-1. [x] Transform all wsrep values to metrics
-1. [x] Add metadata for all wsrep values
-1. [x] Check additional state for metrics
-1. [x] Handle tags
-1. [x] Automate packaging for Ubuntu
-  1. [x] Ansible Role
-  1. [x] Update Readme: Link to package and Ansible role
-1. [ ] Reconnect Logic for Galera Collector
-1. [ ] Tests
-1. [ ] Extend bosun_emitter to send multiple data points
-1. [ ] Failure Modes
-  1. Check if Collector is alive
-  1. Remove collector if dead
-  1. Remove collector if too many collection failures
-1. [ ] Support multiple Galera Collectors -- also change in Ansible role
-1. [ ] Add internal metrics `rs-collector.*`
+- [x] Transform all wsrep values to metrics
+- [x] Add metadata for all wsrep values
+- [x] Check additional state for metrics
+- [x] Handle tags
+- [x] Automate packaging for Ubuntu
+  - [x] Ansible Role
+  - [x] Update Readme: Link to package and Ansible role
+- [ ] Failure Modes
+  - [ ] Reinitialize collector if collection fails.
+    - [ ] Reconnect Logic for Galera Collector
+  - [ ] Remove collector if too many collection failures.
+  - [ ] Remove collector collection thread does not respond anymore.
+- [ ] Tests
+- [ ] Extend bosun_emitter to send multiple data points
+- [ ] Support multiple Galera Collectors -- also change in Ansible role
+- [ ] Add internal metrics `rs-collector.*`
 
 
 ## Installation

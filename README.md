@@ -25,4 +25,5 @@
   1. Check if Collector is alive
   1. Remove collector if dead
   1. Remove collector if too many collection failures
+1. [ ] Support multiple Galera Collectors -- also change in Ansible role
 

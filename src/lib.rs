@@ -18,3 +18,7 @@ pub mod collectors;
 pub mod config;
 pub mod scheduler;
 pub mod utils;
+
+enum Msg<T> {
+    Collector(String, T)
+}

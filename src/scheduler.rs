@@ -3,6 +3,7 @@ use chan;
 use chan_signal::Signal;
 use chan_signal;
 
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::fmt;
 use std::thread::JoinHandle;
@@ -10,6 +11,7 @@ use std::thread;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use Msg;
 use config::Config;
 use collectors::Collector;
 use collectors::Id;
@@ -90,14 +92,14 @@ impl CollectorController {
 struct CollectorRunner {
     id: Id,
     runner_rx: Receiver<CollectorRequest>,
-    controller_tx: Sender<CollectorResponse>,
+    controller_tx: Sender<Msg<CollectorResponse>>,
     collector: Arc<Mutex<Box<Collector + Send>>>,
 }
 
 impl CollectorRunner {
     fn new(id: Id,
            runner_rx: Receiver<CollectorRequest>,
-           controller_tx: Sender<CollectorResponse>,
+           controller_tx: Sender<Msg<CollectorResponse>>,
            collector: Box<Collector + Send>)
            -> CollectorRunner {
         CollectorRunner {
@@ -116,7 +118,8 @@ impl CollectorRunner {
                 match message {
                     Some(CollectorRequest::Helo) => {
                         debug!("CollectorRunner {} received 'Helo' message.", &self.id);
-                        self.controller_tx.send(CollectorResponse::Id(self.id.clone()));
+                        self.controller_tx.send(
+                            Msg::Collector(self.id.clone(),CollectorResponse::Id(self.id.clone())));
                     }
                     Some(CollectorRequest::Metadata) => {
                         debug!("CollectorRunner {} received 'Metadata' message.", &self.id);
@@ -131,7 +134,8 @@ impl CollectorRunner {
                         let collector = self.collector.clone();
                         let collector = collector.lock().unwrap();
                         collector.shutdown();
-                        self.controller_tx.send(CollectorResponse::Id(self.id.clone()));
+                        self.controller_tx.send(
+                            Msg::Collector(self.id.clone(),CollectorResponse::Id(self.id.clone())));
                         break;
                     }
                     None => {
@@ -156,7 +160,8 @@ impl CollectorRunner {
                     let ref collector = *collector.lock().unwrap();
                     let metadata = collector.metadata();
                     for m in metadata.into_iter() {
-                        tx.send(CollectorResponse::Metadata(m));
+                        tx.send(
+                            Msg::Collector(id.clone(), CollectorResponse::Metadata(m)));
                     }
                     debug!("CollectorRunner {} finished metadata thread.", &id);
                 });
@@ -180,7 +185,8 @@ impl CollectorRunner {
                     let ref collector = *collector.lock().unwrap();
                     let samples = collector.collect();
                     for s in samples.into_iter() {
-                        tx.send(CollectorResponse::Sample(s));
+                        tx.send(
+                            Msg::Collector(id.clone(), CollectorResponse::Sample(s)));
                     }
                     debug!("CollectorRunner {} finished sample thread.", &id);
                 });
@@ -194,25 +200,26 @@ impl CollectorRunner {
 
 fn create_controllers(
     collectors: Vec<Box<Collector + Send>>,
-    runners_to_main_tx: Sender<CollectorResponse>)
-    -> Vec<CollectorController> {
+    runners_to_main_tx: Sender<Msg<CollectorResponse>>)
+    -> HashMap<String, CollectorController> {
 
-    let mut controllers: Vec<CollectorController> = Vec::new();
+    let mut controllers: HashMap<String, CollectorController> = HashMap::new();
 
     for mut c in collectors.into_iter() {
         // Initialization might be moved to collector threads?
         match c.init() {
             Ok(_) => {
                 let (to_runner_tx, from_controller_rx) = chan::async();
-                let mut controller = CollectorController::new(c.id().clone(), to_runner_tx);
-                let runner = CollectorRunner::new(c.id().clone(),
+                let id = c.id().clone();
+                let mut controller = CollectorController::new(id.clone(), to_runner_tx);
+                let runner = CollectorRunner::new(id.clone(),
                                                   from_controller_rx,
                                                   runners_to_main_tx.clone(),
                                                   c);
                 let runner_thread = runner.spawn();
 
                 controller.runner_thread = Some(runner_thread);
-                controllers.push(controller);
+                controllers.insert(id, controller);
             },
             Err(err) => {
                 error!("Failed to initialize collector {}: {:?}", c.id(), err);
@@ -223,17 +230,17 @@ fn create_controllers(
     controllers
 }
 
-fn event_loop(threads: &Vec<CollectorController>,
+fn event_loop(threads: &HashMap<String, CollectorController>,
               signal_rx: &Receiver<Signal>,
               timer: &Receiver<Sender<()>>,
-              collectors_rx: &Receiver<CollectorResponse>,
+              collectors_rx: &Receiver<Msg<CollectorResponse>>,
               bosun_tx: &Sender<BosunRequest>)
               -> () {
     info!("Scheduler thread entering event loop.");
 
     // TODO: This should not be here.
     // Transmit metadata once.
-    for cc in threads.iter() {
+    for cc in threads.values() {
         cc.runner_tx.send(CollectorRequest::Metadata)
     }
 
@@ -245,21 +252,21 @@ fn event_loop(threads: &Vec<CollectorController>,
             },
             timer.recv() => {
                 trace!("Scheduler: I've been ticked.");
-                for cc in threads.iter() {
+                for cc in threads.values() {
                     cc.runner_tx.send(CollectorRequest::Sample)
                 }
             },
             collectors_rx.recv() -> message => {
                 match message {
-                    Some(CollectorResponse::Id(id)) => {
+                    Some(Msg::Collector(_, CollectorResponse::Id(id))) => {
                         debug!("Scheduler received 'Helo' from collector {}.", id);
                     }
-                    Some(CollectorResponse::Metadata(metadata)) => {
-                        debug!("Scheduler received metadata for '{}'.", &metadata.metric );
+                    Some(Msg::Collector(id, CollectorResponse::Metadata(metadata))) => {
+                        debug!("Scheduler received metadata from '{}' for '{}'.", &id, &metadata.metric );
                         bosun_tx.send(BosunRequest::Metadata(metadata));
                     }
-                    Some(CollectorResponse::Sample(sample)) => {
-                        debug!("Scheduler received sample {}.", sample.time);
+                    Some(Msg::Collector(id, CollectorResponse::Sample(sample))) => {
+                        debug!("Scheduler received sample from '{}' for '{}'.", &id, &sample.time );
                         bosun_tx.send(BosunRequest::Sample(sample));
                     }
                     None => {
@@ -272,14 +279,14 @@ fn event_loop(threads: &Vec<CollectorController>,
     }
 }
 
-fn tear_down(threads: Vec<CollectorController>) -> () {
+fn tear_down(mut threads: HashMap<String, CollectorController>) -> () {
     info!("Scheduler thread shutting down ...");
-    for cc in threads.iter() {
+    for cc in threads.values() {
         cc.runner_tx.send(CollectorRequest::Shutdown)
     }
 
     info!("Scheduler thread waiting for collector threads to finish ...");
-    for cc in threads.into_iter() {
+    for (_, cc) in threads.drain() {
         let jh = cc.runner_thread.unwrap();
         let _ = jh.join();
     }

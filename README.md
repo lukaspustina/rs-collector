@@ -15,13 +15,15 @@
 - [x] Handle tags
 - [x] Automate packaging for Ubuntu
   - [x] Ansible Role
-  - [ ] Update Readme: Link to package and Ansible role
+  - [x] Update Readme: Link to package and Ansible role
 - [ ] Failure Modes
-  - [ ] Reinitialize collector if collection fails.
-    - [ ] Reconnect Logic for Galera Collector
+  - [x] Reinitialize collector if collection fails.
+    - [x] Reconnect Logic for Galera Collector
   - [ ] Remove collector if too many collection failures.
   - [ ] Remove collector collection thread does not respond anymore.
+  - [ ] Remove collector collection thread does not respond anymore.
 - [ ] Tests
+- [ ] Fix Todos
 - [ ] Extend bosun_emitter to send multiple data points
 - [ ] Support multiple Galera Collectors -- also change in Ansible role
 - [ ] Add internal metrics `rs-collector.*`

@@ -22,6 +22,7 @@
   - [ ] Remove collector if too many collection failures.
   - [ ] Remove collector collection thread does not respond anymore.
   - [ ] Remove collector collection thread does not respond anymore.
+- [ ] Add timestamps to log messages
 - [ ] Tests
 - [ ] Fix Todos
 - [ ] Extend bosun_emitter to send multiple data points

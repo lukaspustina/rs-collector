@@ -27,6 +27,7 @@ clap = "2"
 env_logger = "0.3"
 log = "0.3"
 rustc-serialize = "0.3"
+time = "0.1.35"
 toml = "0.1"
 
 [dependencies.mysql]

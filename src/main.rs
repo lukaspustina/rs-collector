@@ -4,8 +4,11 @@ extern crate clap;
 extern crate env_logger;
 #[macro_use] extern crate log;
 extern crate rs_collector;
+extern crate time;
 
 use clap::{Arg, ArgMatches, App};
+use log::SetLoggerError;
+use std::env;
 use std::error::Error;
 use std::path::Path;
 
@@ -15,7 +18,7 @@ static VERSION: &'static str = env!("CARGO_PKG_VERSION");
 static DEFAULT_CONFIG_FILE: &'static str = "/etc/rs-collector.conf";
 
 fn main() {
-    if env_logger::init().is_err() {
+    if init_logger().is_err() {
         exit_with_error("Could not initialize logger", -1);
     }
 
@@ -48,6 +51,32 @@ fn main() {
     }
 
     run(&config);
+}
+
+fn init_logger() -> Result<(), SetLoggerError> {
+    use log::{LogRecord, LogLevelFilter};
+    use env_logger::LogBuilder;
+
+    let format = |record: &LogRecord| {
+        let t = time::now();
+        format!("{},{:03} - {} - {} - {}:{}",
+                time::strftime("%Y-%m-%d %H:%M:%S", &t).unwrap(),
+                t.tm_nsec / 1000_000,
+                record.level(),
+                record.args(),
+                record.location().file(),
+                record.location().line(),
+        )
+    };
+
+    let mut builder = LogBuilder::new();
+    builder.format(format).filter(None, LogLevelFilter::Info);
+
+    if env::var("RUST_LOG").is_ok() {
+        builder.parse(&env::var("RUST_LOG").unwrap());
+    }
+
+    builder.init()
 }
 
 fn parse_args(cli_args: &ArgMatches) -> Result<Config, Box<Error>> {

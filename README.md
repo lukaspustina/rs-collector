@@ -20,19 +20,47 @@
   - [x] Reinitialize collector if collection fails.
     - [x] Reconnect Logic for Galera Collector
   - [ ] Remove collector if too many collection failures.
-  - [ ] Remove collector collection thread does not respond anymore.
-  - [ ] Remove collector collection thread does not respond anymore.
-- [ ] Add timestamps to log messages
+  - [ ] Remove collector if collection thread does not respond anymore.
+- [x] Add timestamps to log messages
 - [ ] Tests
 - [ ] Fix Todos
+- [ ] Rust documentation
+- [ ] Enhance deb package
+  - [ ] Don't overwrite changed config files
+- [ ] Move project to Rheinwerk
 - [ ] Extend bosun_emitter to send multiple data points
 - [ ] Support multiple Galera Collectors -- also change in Ansible role
 - [ ] Add internal metrics `rs-collector.*`
+
+Collectors
+- [ ] Check for IP bound to interface -- keepalived VIP side effect
+- [ ] Postfix metrics
+- [ ] MongoDB replication metrics
+- [ ] Docker
+- [ ] ifconfig / network inferface frame metrics
+
+- [ ] Ceph metrics
+- [ ] MySQL performance metrics
+- [ ] MongoDB performance metrics
+- [ ] Tomcat management servlet metrics
+- [ ] LACP / interface bond metrics
+
 
 
 ## Releases
 
 Travis CI creates Ubuntu Trusty packages for each release. Please see the [Repository](https://packagecloud.io/lukaspustina/opensource) for details.
+
+### Workflow
+
+1. Push and wait for Travis CI to finish master build.
+1. Increase Cargo version.
+1. Tag master with corresponding version tag.
+1. Push tags.
+
+## Deploy to Production
+
+`ansible-playbook mysql-servers.yml --tags rs_collector --diff --extra-vars "RW_APT_CACHE_UPDATE=true RW_ENABLE_DOWNLOADS=true"`
 
 ## Installation
 

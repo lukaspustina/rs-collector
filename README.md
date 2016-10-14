@@ -38,11 +38,11 @@ Travis CI creates Ubuntu Trusty packages for each release. Please see the [Repos
 1. Tag master with corresponding version tag.
 1. Push tags.
 
-
-## Deploy to Production
-
-`ansible-playbook mysql-servers.yml --tags rs_collector --diff --extra-vars "RW_APT_CACHE_UPDATE=true RW_ENABLE_DOWNLOADS=true"`
-
 ## Installation
 
 There is also an Ansile role available at [Ansible Galaxy](https://galaxy.ansible.com/Rheinwerk/rs_collector/) that automates the installation of rs-collector.
+
+### Deploy to Production
+
+`ansible-playbook mysql-servers.yml --tags rs_collector --diff --extra-vars "RW_APT_CACHE_UPDATE=true RW_ENABLE_DOWNLOADS=true"`
+

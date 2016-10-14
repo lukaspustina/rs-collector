@@ -39,8 +39,13 @@ pub fn create_collectors(config: &Config) -> Vec<Box<Collector + Send>> {
     let mut galeras = galera::create_instances(config);
     collectors.append(&mut galeras);
 
+    // Create HasIpAddr collector instance
+    let mut hasipaddr = hasipaddr::create_instances(config);
+    collectors.append(&mut hasipaddr);
+
     collectors
 }
 
+pub mod hasipaddr;
 pub mod galera;
 

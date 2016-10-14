@@ -5,7 +5,8 @@ use std::io::Read;
 use std::path::Path;
 use toml;
 
-use ::collectors::galera::GaleraConfig;
+use collectors::galera::GaleraConfig;
+use collectors::hasipaddr::HasIpAddrConfig;
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]
@@ -21,6 +22,8 @@ pub struct Config {
     pub Tags: Tags,
     /// Galera config; if enabled
     pub Galera: Option<GaleraConfig>,
+    /// HasIpAddr config; if enabled
+    pub HasIpAddr: Option<HasIpAddrConfig>,
 }
 
 impl Config {
@@ -58,6 +61,7 @@ impl Default for Config {
             Hostname: "localhost".to_string(),
             Tags: Tags::new(),
             Galera: None,
+            HasIpAddr: None,
         }
     }
 }

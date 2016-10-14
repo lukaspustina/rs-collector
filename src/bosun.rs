@@ -1,4 +1,4 @@
-use bosun_emitter::{BosunClient, Datum, Tags};
+use bosun_emitter::{BosunClient, Datum};
 use bosun_emitter;
 use chan::Receiver;
 use chan;
@@ -7,6 +7,8 @@ use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 static TICK_INTERVAL_SEC: u64 = 15u64;
+
+pub type Tags = bosun_emitter::Tags;
 
 // TODO: Replace with Bosun::Datum
 #[derive(Debug)]
@@ -19,8 +21,12 @@ pub struct Sample {
 
 impl Sample {
     pub fn new<T: Into<String>, U: Into<f64>>(metric: T, value: U) -> Self {
+        Sample::new_with_tags(metric, value, Tags::new())
+    }
+
+    pub fn new_with_tags<T: Into<String>, U: Into<f64>>(metric: T, value: U, tags: Tags) -> Self {
         let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
-        Sample { time: now, metric: metric.into(), value: value.into(), tags: Tags::new() }
+        Sample { time: now, metric: metric.into(), value: value.into(), tags: tags }
     }
 }
 

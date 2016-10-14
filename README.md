@@ -1,6 +1,7 @@
 # rs-collector
 
-[![Build Status](https://travis-ci.org/lukaspustina/rs-collector.svg?branch=master)](https://travis-ci.org/lukaspustina/rs-collector)
+![Release Status](https://img.shields.io/badge/status-alpha-red.svg) [![Build Status](https://img.shields.io/travis/lukaspustina/rs-collector/master.svg)](https://travis-ci.org/lukaspustina/rs-collector) [![GitHub release](https://img.shields.io/github/release/lukaspustina/rs-collector.svg)](https://github.com/lukaspustina/rs-collector/releases) [![license](https://img.shields.io/github/license/lukaspustina/rs-collector.svg)](https://github.com/lukaspustina/rs-collector/blob/master/LICENSE) [![Ansible Role](https://img.shields.io/badge/ansible--galaxy-rs__collector-blue.svg)](https://galaxy.ansible.com/Rheinwerk/rs_collector/)
+
 
 ## Roadmap
 

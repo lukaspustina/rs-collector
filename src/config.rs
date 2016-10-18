@@ -7,6 +7,7 @@ use toml;
 
 use collectors::galera::GaleraConfig;
 use collectors::hasipaddr::HasIpAddrConfig;
+use collectors::postfix::PostfixConfig;
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]
@@ -24,6 +25,10 @@ pub struct Config {
     pub Galera: Option<GaleraConfig>,
     /// HasIpAddr config; if enabled
     pub HasIpAddr: Option<HasIpAddrConfig>,
+    /// Postfix config; if enabled
+    pub Postfix: Option<PostfixConfig>,
+    /// Deactivate Data Transmission to Bosun
+    pub DontSend: Option<bool>
 }
 
 impl Config {
@@ -62,6 +67,8 @@ impl Default for Config {
             Tags: Tags::new(),
             Galera: None,
             HasIpAddr: None,
+            Postfix: None,
+            DontSend: Some(false),
         }
     }
 }

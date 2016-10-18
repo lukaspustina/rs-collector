@@ -27,8 +27,12 @@ pub fn run(collectors: Vec<Box<Collector + Send>>, config: &Config) -> () {
     info!("Loaded {} collectors: {:#?}", controllers.len(), controllers);
 
     let (to_bosun_tx, from_main_rx) = chan::async();
-    let bosun = Bosun::new(&config.Host, &config.Hostname, &config.Tags, from_main_rx);
-    let bosun_thread = bosun.spawn();
+    let bosun_thread = if config.DontSend.or(Some(false)).unwrap() {
+        None
+    } else {
+        let bosun = Bosun::new(&config.Host, &config.Hostname, &config.Tags, from_main_rx);
+        Some(bosun.spawn())
+    };
 
     event_loop(&controllers,
                &signal,
@@ -39,7 +43,9 @@ pub fn run(collectors: Vec<Box<Collector + Send>>, config: &Config) -> () {
     // TODO: Generalize tear_down for all threads / JoinHandles
     tear_down(controllers);
     to_bosun_tx.send(BosunRequest::Shutdown);
-    let _ = bosun_thread.join();
+    if let Some(thread) = bosun_thread {
+        let _ = thread.join();
+    }
 
     info!("Scheduler thread finished.");
 }

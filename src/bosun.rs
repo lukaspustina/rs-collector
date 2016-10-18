@@ -60,7 +60,8 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    pub fn new<T: Into<String>>( metric: T, rate: Rate, unit: T, description: T ) -> Self {
+    pub fn new<S: Into<String>, T: Into<String>, U: Into<String>>( metric: S, rate: Rate, unit: T, description: U )
+        -> Self {
         Metadata { metric: metric.into(), rate: rate.into(), unit: unit.into(), description: description.into() }
     }
 }

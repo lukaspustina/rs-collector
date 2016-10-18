@@ -43,9 +43,14 @@ pub fn create_collectors(config: &Config) -> Vec<Box<Collector + Send>> {
     let mut hasipaddr = hasipaddr::create_instances(config);
     collectors.append(&mut hasipaddr);
 
+     // Create Postfix collector instance
+    let mut postfix = postfix::create_instances(config);
+    collectors.append(&mut postfix);
+
     collectors
 }
 
-pub mod hasipaddr;
 pub mod galera;
+pub mod hasipaddr;
+pub mod postfix;
 

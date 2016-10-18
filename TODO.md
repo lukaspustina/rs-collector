@@ -36,7 +36,7 @@
 
 - [x] Check for IP bound to interface -- keepalived VIP side effect
 - [ ] Postfix metrics
-  - [ ] Queue len
+  - [x] Queue len
   - [ ] Send / Recv stats
 - [ ] MongoDB replication metrics
 - [ ] Docker

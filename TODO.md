@@ -21,7 +21,9 @@
   - [ ] Remove collector if collection thread does not respond anymore.
 - [x] Add timestamps to log messages
 - [ ] Tests
-- [ ] Fix Todos
+- [ ] Make it safe
+  - [ ] Fix Todos
+  - [ ] Eliminate unwraps
 - [ ] Rust documentation
 - [ ] Enhance deb package
   - [ ] Don't overwrite changed config files

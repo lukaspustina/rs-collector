@@ -96,7 +96,9 @@ impl Collector for Galera {
         Ok(metric_data)
     }
 
-    fn shutdown(&mut self) {}
+    fn shutdown(&mut self) {
+        self.pool = None;
+    }
 
     fn metadata(&self) -> Vec<Metadata> {
         vec![

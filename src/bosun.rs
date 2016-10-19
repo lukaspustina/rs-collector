@@ -103,14 +103,14 @@ impl Bosun {
             loop {
                 chan_select! {
                     timer.recv() => {
-                        trace!("I've been ticked. Current sample queue length is {:#?}", &self.queue.len());
+                        debug!("I've been ticked. Current sample queue length is {:#?}. Sending data now.", &self.queue.len());
                         for mut s in self.queue.drain(..) {
                             let value = format!("{}", &s.value);
                             s.tags.insert("host".to_string(), self.hostname.clone());
                             s.tags.extend(self.default_tags.clone());
                             let d = Datum {
                                 metric: &s.metric, timestamp: s.time as i64, value: &value, tags: &s.tags };
-                            debug!("Sending datum {:?} to Bosun.", &d);
+                            trace!("Sending datum {:?} to Bosun.", &d);
                             match self.bosun_client.emit_datum(&d) {
                                 Ok(_) => {},
                                 Err(err) => {

@@ -11,6 +11,7 @@ Please see [Todos](TODO.md).
 
 1. [Galera](#galera) -- Collects metrics about the cluster status and cluster sync performance of a Percona Galera MySQL cluster.
 1. [HasIpAddr](#hasipaddr) -- Checks if a host has bound specified IPv4 address.
+1. [Postfix](#postfix) -- Collects queue lengths for all postfix queues.
 
 See below for details about the collectors.
 
@@ -21,6 +22,7 @@ _HasIpAddr_ sends either 1 or 0 if a host has bound a specific IPv4 address or n
 
 In our production cluster we have observed situations when none of the cluster members has bound the virtual IP address. This collector allows us to define an alarm for such cases.
 
+### Postfix
 
 ## Configuration
 

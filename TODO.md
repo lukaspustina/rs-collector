@@ -14,7 +14,7 @@
 - [x] Automate packaging for Ubuntu
   - [x] Ansible Role
   - [x] Update Readme: Link to package and Ansible role
-- [ ] Failure Modes
+- [+] Failure Modes
   - [x] Reinitialize collector if collection fails.
     - [x] Reconnect Logic for Galera Collector
   - [ ] Remove collector if too many collection failures.
@@ -35,7 +35,7 @@
 ## Collectors
 
 - [x] Check for IP bound to interface -- keepalived VIP side effect
-- [ ] Postfix metrics
+- [+] Postfix metrics
   - [x] Queue len
   - [ ] Send / Recv stats
 - [ ] MongoDB replication metrics

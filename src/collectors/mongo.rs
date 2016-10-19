@@ -5,7 +5,7 @@
 // * http://blog.mlab.com/2013/03/replication-lag-the-facts-of-life/
 //
 
-use bosun::{Metadata, Rate, Sample};
+use bosun::{Metadata, Rate, Sample, Tags};
 use collectors::{Collector, Error, Id};
 use config::Config;
 
@@ -74,10 +74,9 @@ impl Collector for Mongo {
 
     fn collect(&self) -> Result<Vec<Sample>, Error> {
         // TODO: make this safe -> if let / match
-        let client = self.client.as_ref().unwrap();
         let mut metric_data = Vec::new();
 
-        let mut rs_status = try!(rs_status(client)).into_iter()
+        let mut rs_status = try!(self.rs_status()).into_iter()
             .map( |mut s| {s.tags.insert("name".to_string(), self.name.clone()); s });
         trace!("rs_status = {:#?}", rs_status);
         metric_data.extend(&mut rs_status);
@@ -92,25 +91,39 @@ impl Collector for Mongo {
 
     fn metadata(&self) -> Vec<Metadata> {
         vec![
-            Metadata::new( "mongo.replicaset.mystate", Rate::Gauge, "",
+            Metadata::new( "mongo.replicasets.members.mystate", Rate::Gauge, "",
                 "Show the local ReplicaSet state: 0 = startup, 1 = primary, 2 = secondary, 3 = recovering, 5 = startup2, 6 = unknown, 7 = arbiter, 8 = down, 9 = rollback, 10 = removed" ),
         ]
     }
 }
 
-#[allow(non_snake_case)]
-fn rs_status(client: &Client) -> Result<Vec<Sample>, Error> {
-    let result = try!(query_rs_status(client));
+impl Mongo {
+    #[allow(non_snake_case)]
+    fn rs_status(&self) -> Result<Vec<Sample>, Error> {
+        let client = self.client.as_ref().unwrap();
+        let result = try!(query_rs_status(client));
 
-    let mut samples = Vec::new();
-    if let Some(&Bson::I32(myState)) = result.get("myState") {
-        trace!("myState: {}", myState);
-        samples.push(
-            Sample::new("mongo.replicaset.mystate", myState)
-        );
+        let replicaset: String = if let Some(&Bson::String(ref set)) = result.get("set") {
+            trace!("set: {}", set);
+            set.to_string()
+        } else {
+            let msg = format!("Could not determine replica set for {}", self.id);
+            return Err(Error::CollectionError(msg));
+        };
+
+        let mut tags = Tags::new();
+        tags.insert("replicaset".to_string(), replicaset);
+        let mut samples = Vec::new();
+
+        if let Some(&Bson::I32(myState)) = result.get("myState") {
+            trace!("myState: {}", myState);
+            samples.push(
+                Sample::new_with_tags("mongo.replicasets.members.mystate", myState, tags.clone())
+            );
+        }
+
+        Ok(samples)
     }
-
-    Ok(samples)
 }
 
 fn query_rs_status(client: &Client) -> Result<Document, Error> {

@@ -43,6 +43,10 @@ pub fn create_collectors(config: &Config) -> Vec<Box<Collector + Send>> {
     let mut hasipaddr = hasipaddr::create_instances(config);
     collectors.append(&mut hasipaddr);
 
+     // Create Postfix collector instances
+    let mut mongo = mongo::create_instances(config);
+    collectors.append(&mut mongo);
+
      // Create Postfix collector instance
     let mut postfix = postfix::create_instances(config);
     collectors.append(&mut postfix);
@@ -52,5 +56,6 @@ pub fn create_collectors(config: &Config) -> Vec<Box<Collector + Send>> {
 
 pub mod galera;
 pub mod hasipaddr;
+pub mod mongo;
 pub mod postfix;
 

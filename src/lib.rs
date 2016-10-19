@@ -2,6 +2,8 @@
 
 extern crate bosun_emitter;
 #[macro_use]
+extern crate bson;
+#[macro_use]
 extern crate chan;
 extern crate chan_signal;
 #[macro_use]
@@ -11,10 +13,11 @@ extern crate get_if_addrs;
 #[macro_use]
 extern crate itertools;
 #[macro_use]
+extern crate mongodb;
+#[macro_use]
 extern crate mysql;
 extern crate rustc_serialize;
 extern crate toml;
-
 
 pub mod bosun;
 pub mod collectors;

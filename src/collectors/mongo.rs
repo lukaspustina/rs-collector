@@ -6,13 +6,14 @@
 //
 
 use bosun::{Metadata, Rate, Sample};
-use collectors::*;
+use collectors::{Collector, Error, Id};
 use config::Config;
-use utils;
 
-use bson::Bson;
-use mongodb::{Client, ThreadedClient};
-use mongodb::db::ThreadedDatabase;
+use bson::{Bson, Document};
+use mongodb::{Client, CommandType, Error as MongodbError, ThreadedClient};
+use mongodb::db::{ThreadedDatabase};
+use std::error::Error as StdError;
+use std::num::ParseIntError;
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]
@@ -21,7 +22,7 @@ pub struct MongoConfig {
     pub User: Option<String>,
     pub Password: Option<String>,
     pub Host: String,
-    pub Port: i32,
+    pub Port: u16,
 }
 
 #[derive(Clone)]
@@ -30,7 +31,7 @@ pub struct Mongo {
     user: Option<String>,
     password: Option<String>,
     ip_or_hostname: String,
-    port: i32,
+    port: u16,
     client: Option<Client>,
 }
 
@@ -54,20 +55,15 @@ impl Collector for Mongo {
     fn init(&mut self) -> Result<(), Box<Error>> {
         use std::error::Error;
 
-        /*
-        let galera = self.clone();
-        let pool = my::Pool::new(galera);
-        match pool {
-            Ok(pool) => {
-                self.pool = Some(pool);
+        let result = Client::connect(&self.ip_or_hostname, self.port);
+        match result {
+            Ok(client) => {
+                self.client = Some(client);
                 Ok(())
             },
             // TODO: Simplify
             Err(err) => Err(Box::new(super::Error::InitError(err.description().to_string())))
         }
-        */
-        Err(Box::new(super::Error::InitError("Not yet implemented".to_string())))
-
     }
 
     fn id(&self) -> &Id {
@@ -75,19 +71,21 @@ impl Collector for Mongo {
     }
 
     fn collect(&self) -> Result<Vec<Sample>, Error> {
-        /*
         // TODO: make this safe -> if let / match
-        let wsrepstates: Vec<WsrepStatus> = try!(query_wsrep_status(self.pool.as_ref().unwrap()));
-        trace!("wsrepstates = {:#?}", wsrepstates);
-        let metric_data = wsrepstates.convert_to_metric();
-        debug!("metric_data = {:#?}", metric_data);
-        */
+        let client = self.client.as_ref().unwrap();
+        let mut metric_data = Vec::new();
 
-        let metric_data = Vec::new();
+        let mut rs_status = try!(rs_status(client));
+        trace!("rs_status = {:#?}", rs_status);
+        metric_data.append(&mut rs_status);
+
+        debug!("metric_data = {:#?}", metric_data);
         Ok(metric_data)
     }
 
-    fn shutdown(&self) {}
+    fn shutdown(&mut self) {
+        self.client = None;
+    }
 
     fn metadata(&self) -> Vec<Metadata> {
         vec![
@@ -97,5 +95,34 @@ impl Collector for Mongo {
     }
 }
 
+#[allow(non_snake_case)]
+fn rs_status(client: &Client) -> Result<Vec<Sample>, Error> {
+    let result = try!(query_rs_status(client));
 
+    let mut samples = Vec::new();
+    if let Some(&Bson::I32(myState)) = result.get("myState") {
+        trace!("myState: {}", myState);
+        samples.push(
+            Sample::new("mongo.replicaset.mystate", myState)
+        );
+    }
+
+    Ok(samples)
+}
+
+fn query_rs_status(client: &Client) -> Result<Document, Error> {
+    let db = client.db("admin");
+    let cmd = doc! { "replSetGetStatus" => 1 };
+    let result = try!(db.command(cmd, CommandType::Suppressed, None));
+    trace!("Document: {}", result);
+
+    Ok(result)
+}
+
+impl From<MongodbError> for Error {
+    fn from(err: MongodbError) -> Self {
+        let msg = format!("Failed to execute MongoDB query, because '{}'.", err.description());
+        Error::CollectionError(msg)
+    }
+}
 

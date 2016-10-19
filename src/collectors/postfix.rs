@@ -2,7 +2,8 @@ use bosun::{Metadata, Rate, Sample, Tags};
 use collectors::*;
 use config::Config;
 
-use itertools::Itertools;
+use std::error::Error as StdError;
+use std::num::ParseIntError;
 use std::process::{Command, Output};
 use std::io::Result as IoResult;
 
@@ -25,7 +26,7 @@ pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
             let id = "postfix".to_string();
             info!("Created instance of Postfix collector: {}", id);
 
-            let collector = Postfix{ id: id };
+            let collector = Postfix { id: id };
             vec![Box::new(collector)]
         },
         None => {
@@ -36,8 +37,11 @@ pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
 
 impl Collector for Postfix {
     fn init(&mut self) -> Result<(), Box<Error>> {
-        // TODO: Check if qshape is installed and fail if not
-        Ok(())
+        let result = Command::new("/usr/sbin/qshape").output();
+        match handle_command_output(result) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(Box::new(err)),
+        }
     }
 
     fn id(&self) -> &Id {
@@ -78,6 +82,29 @@ impl Collector for Postfix {
     }
 }
 
+fn handle_command_output(result: IoResult<Output>) -> Result<Output, Error> {
+    match result {
+        Ok(output) => {
+            if output.status.success() {
+                debug!("Successfully found and run qshape.");
+                Ok(output)
+            } else {
+                let exit_code = output.status.code().map_or("<received signal>".to_string(), |i| format!("{}", i));
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                let msg = format!("Running qshape returned exit code {}: out '{}', err '{}'.", exit_code, stdout, stderr);
+                debug!("{}", msg);
+                Err(Error::InitError(msg))
+            }
+        },
+        Err(err) => {
+            let msg = format!("Failed to run qshape, because '{}'.", err.description());
+            debug!("{}", msg);
+            Err(Error::InitError(msg))
+        },
+    }
+}
+
 struct QueueLength {
     name: String,
     bucket: String,
@@ -85,7 +112,11 @@ struct QueueLength {
 }
 
 fn sample_queues() -> Result<Vec<Sample>, Error> {
-    let q_lens: Vec<QueueLength> = POSTFIX_QUEUS.iter().map( |q| get_queue_len(q).unwrap() ).flatten().collect();
+    let mut q_lens: Vec<QueueLength> = Vec::new();
+    for q in POSTFIX_QUEUS {
+        let mut single_q_lens = try!(get_queue_len(q));
+        q_lens.append(&mut single_q_lens);
+    }
     let metric_data: Vec<Sample> = q_lens.convert_to_metric();
     debug!("metric_data = {:#?}", metric_data);
 
@@ -93,39 +124,39 @@ fn sample_queues() -> Result<Vec<Sample>, Error> {
 }
 
 fn get_queue_len(q_name: &str) -> Result<Vec<QueueLength>, Error> {
-    // TODO: 1. Check result code and error! stderr and 2. use timeouts for execution
-    let output = execute_qshape_for_queue(q_name).unwrap();
-    if !output.status.success() {
-        // TODO define me some errors
-        error!("Failed to run qshape for queue '{}'", q_name);
-    }
+    let result = execute_qshape_for_queue(q_name);
+    let output = try!(handle_command_output(result));
     let stdout = String::from_utf8_lossy(&output.stdout);
     let lines: Vec<&str> = stdout.lines().take(2).collect();
     if lines.len() < 2 {
-        // TODO define me some errors
-        error!("Failed to parse qshape output for queue '{}'", q_name);
+        let msg = format!("Failed to parse qshape output for queue '{}'", q_name);
+        trace!("Failed to parse qshape out for lines: '{}'", stdout);
+        return Err(Error::CollectionError(msg));
     }
     let header: Vec<&str> = lines[0].split_whitespace().collect();
     let totals: Vec<&str> = lines[1].split_whitespace().collect();
 
     let mut q_lens = Vec::new();
-    // TODO: Bug: last column contains '+' which is not a valid opentsdb tag
     for i in 2..totals.len() {
-        // TODO: Make sure tag values are valid -- check opentsdb
-        let bucket = header[i-1].to_string().replace("+", "p");
-        // TODO: try!
-        let len = totals[i].parse::<i32>().unwrap();
-        q_lens.push(QueueLength{ name: q_name.to_string(), bucket: bucket, len: len });
-
+        // Last column name ends in '+' which is an invalid char for OpenTSDB tag values:
+        let bucket = header[i - 1].to_string().replace("+", "p");
+        let len = try!(totals[i].parse::<i32>());
+        q_lens.push(QueueLength { name: q_name.to_string(), bucket: bucket, len: len });
     }
 
     Ok(q_lens)
 }
 
 fn execute_qshape_for_queue(q_name: &str) -> IoResult<Output> {
-    Command::new("/usr/sbin/qshape")
-        .arg(q_name)
-        .output()
+    // TODO: use timeout for execution
+    Command::new("/usr/sbin/qshape").arg(q_name).output()
+}
+
+impl From<ParseIntError> for Error {
+    fn from(err: ParseIntError) -> Self {
+        let msg = format!("Failed to parse qshape output, because '{}'", err.description());
+        Error::CollectionError(msg)
+    }
 }
 
 impl From<QueueLength> for Option<Sample> {

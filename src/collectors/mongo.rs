@@ -13,7 +13,6 @@ use bson::{Bson, Document};
 use mongodb::{Client, CommandType, Error as MongodbError, ThreadedClient};
 use mongodb::db::{ThreadedDatabase};
 use std::error::Error as StdError;
-use std::num::ParseIntError;
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]
@@ -57,6 +56,7 @@ impl Collector for Mongo {
     fn init(&mut self) -> Result<(), Box<Error>> {
         use std::error::Error;
 
+        // TODO: client seems to be _always_ valid, i.e, when connection is impossible
         let result = Client::connect(&self.ip_or_hostname, self.port);
         match result {
             Ok(client) => {

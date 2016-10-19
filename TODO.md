@@ -25,12 +25,11 @@
   - [ ] Fix Todos
   - [ ] Eliminate unwraps
 - [ ] Rust documentation
-- [ ] Enhance deb package
-  - [ ] Don't overwrite changed config files
+- [x] Enhance deb package
+  - [x] Don't overwrite changed config files
 - [ ] Move project to Rheinwerk
 - [ ] Extend bosun_emitter to send multiple data points
 - [ ] Support multiple Galera Collectors -- also change in Ansible role
-- [ ] Add internal metrics `rs-collector.*`
 
 ## Collectors
 
@@ -41,6 +40,7 @@
 - [ ] MongoDB replication metrics
 - [ ] Docker
 - [ ] ifconfig / network inferface frame metrics
+- [ ] Add internal metrics `rs-collector.*`
 
 - [ ] Ceph metrics
 - [ ] MySQL performance metrics

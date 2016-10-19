@@ -19,6 +19,7 @@ use std::num::ParseIntError;
 #[derive(RustcDecodable)]
 #[allow(non_snake_case)]
 pub struct MongoConfig {
+    pub Name: String,
     pub User: Option<String>,
     pub Password: Option<String>,
     pub Host: String,
@@ -28,6 +29,7 @@ pub struct MongoConfig {
 #[derive(Clone)]
 pub struct Mongo {
     id: Id,
+    name: String,
     user: Option<String>,
     password: Option<String>,
     ip_or_hostname: String,
@@ -36,19 +38,19 @@ pub struct Mongo {
 }
 
 pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
-    let mut instances: Vec<Box<Collector + Send>> = Vec::new();
+    let mut names: Vec<Box<Collector + Send>> = Vec::new();
     for m in &config.Mongo {
-        let id = format!("mongo#{}@{}:{}",
-                         m.User.as_ref().unwrap_or(&"''".to_string()), m.Host, m.Port );
-        info!("Created instance of Mongo collector: {}", id);
+        let id = format!("mongo#{}#{}@{}:{}",
+                         m.Name, m.User.as_ref().unwrap_or(&"''".to_string()), m.Host, m.Port );
+        info!("Created name of Mongo collector: {}", id);
 
         let collector = Mongo {
-            id: id, user: m.User.clone(), password: m.Password.clone(),
+            id: id, name: m.Name.clone(), user: m.User.clone(), password: m.Password.clone(),
             ip_or_hostname: m.Host.clone(), port: m.Port, client: None,
         };
-        instances.push(Box::new(collector));
+        names.push(Box::new(collector));
     }
-    instances
+    names
 }
 
 impl Collector for Mongo {
@@ -75,9 +77,10 @@ impl Collector for Mongo {
         let client = self.client.as_ref().unwrap();
         let mut metric_data = Vec::new();
 
-        let mut rs_status = try!(rs_status(client));
+        let mut rs_status = try!(rs_status(client)).into_iter()
+            .map( |mut s| {s.tags.insert("name".to_string(), self.name.clone()); s });
         trace!("rs_status = {:#?}", rs_status);
-        metric_data.append(&mut rs_status);
+        metric_data.extend(&mut rs_status);
 
         debug!("metric_data = {:#?}", metric_data);
         Ok(metric_data)

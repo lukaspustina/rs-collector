@@ -27,9 +27,9 @@ pub trait Collector {
     // This method must be re-callable. That means, this method may be called several times during start and failure mitigation.
     fn init(&mut self) -> Result<(), Box<Error>>;
     fn id(&self) -> &Id;
-    fn collect(&self) -> Result<Vec<Sample>, Error>;
-    fn shutdown(&self);
     fn metadata(&self) -> Vec<Metadata>;
+    fn collect(&self) -> Result<Vec<Sample>, Error>;
+    fn shutdown(&mut self);
 }
 
 pub fn create_collectors(config: &Config) -> Vec<Box<Collector + Send>> {

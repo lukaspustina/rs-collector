@@ -158,7 +158,7 @@ impl CollectorRunner {
                     Some(CollectorRequest::Shutdown) => {
                         debug!("CollectorRunner {} received 'Shutdown' message.", &self.id);
                         let collector = self.collector.clone();
-                        let collector = collector.lock().unwrap();
+                        let mut collector = collector.lock().unwrap();
                         collector.shutdown();
                         self.controller_tx.send(
                             Msg::Collector(self.id.clone(),CollectorResponse::Id(self.id.clone())));

@@ -54,7 +54,7 @@ impl Collector for Postfix {
         Ok(metric_data)
     }
 
-    fn shutdown(&self) {}
+    fn shutdown(&mut self) {}
 
     fn metadata(&self) -> Vec<Metadata> {
         vec![

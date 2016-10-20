@@ -97,6 +97,8 @@ impl Collector for Mongo {
                 "Show the local ReplicaSet state: 0 = startup, 1 = primary, 2 = secondary, 3 = recovering, 5 = startup2, 6 = unknown, 7 = arbiter, 8 = down, 9 = rollback, 10 = removed" ),
             Metadata::new( "mongo.replicasets.oplog_lag.min", Rate::Gauge, "ms",
                 "Show the min. oplog replication between the primary and its secondaries." ),
+            Metadata::new( "mongo.replicasets.oplog_lag.avg", Rate::Gauge, "ms",
+                "Show the avg. oplog replication between the primary and its secondaries." ),
             Metadata::new( "mongo.replicasets.oplog_lag.max", Rate::Gauge, "ms",
                 "Show the max. oplog replication between the primary and its secondaries." ),
         ]
@@ -136,12 +138,15 @@ impl Mongo {
         if myState == 1 {
             let oplog_lag_result = calculate_oplog_lag(&document);
             match oplog_lag_result {
-                Ok((oplog_lag_min, oplog_lag_max)) => {
+                Ok((min, avg, max)) => {
                     samples.push(
-                        Sample::new_with_tags("mongo.replicasets.oplog_lag.min", oplog_lag_min, tags.clone())
+                        Sample::new_with_tags("mongo.replicasets.oplog_lag.min", min, tags.clone())
                     );
                     samples.push(
-                        Sample::new_with_tags("mongo.replicasets.oplog_lag.max", oplog_lag_max, tags.clone())
+                        Sample::new_with_tags("mongo.replicasets.oplog_lag.avg", avg, tags.clone())
+                    );
+                    samples.push(
+                        Sample::new_with_tags("mongo.replicasets.oplog_lag.max", max, tags.clone())
                     );
                 },
                 Err(err) => {
@@ -172,7 +177,7 @@ impl From<MongodbError> for Error {
 }
 
 #[allow(non_snake_case)]
-fn calculate_oplog_lag(document: &Document) -> Result<(f64, f64), Error> {
+fn calculate_oplog_lag(document: &Document) -> Result<(f64, f64, f64), Error> {
     let members = if let Some(&Bson::Array(ref members)) = document.get("members") {
         members
     } else {
@@ -211,13 +216,16 @@ fn calculate_oplog_lag(document: &Document) -> Result<(f64, f64), Error> {
     }
     let mut min = f64::INFINITY;
     let mut max = f64::NEG_INFINITY;
+    let mut avg = 0f64;
 
-    for d in secondary_dates {
+    for d in secondary_dates.iter() {
         // TODO: Check if primary is set
-        let diff = (*primary_date.unwrap() - *d).num_milliseconds() as f64;
+        let diff = (*primary_date.unwrap() - **d).num_milliseconds() as f64;
         min = min.min(diff);
-        max = max.min(diff);
+        max = max.max(diff);
+        avg += diff;
     }
+    avg /= secondary_dates.len() as f64;
 
-    Ok((min, max))
+    Ok((min, avg, max))
 }

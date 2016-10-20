@@ -25,6 +25,7 @@ _HasIpAddr_ sends either 1 or 0 if a host has bound a specific IPv4 address or n
 In our production cluster we have observed situations when none of the cluster members has bound the virtual IP address. This collector allows us to define an alarm for such cases.
 
 ### Mongo
+* `mongo.replicasets.members.mystate` collects the "myState" variable from each replica set member. This allows to compute if the particular replica set is in a sane state.
 
 ### Postfix
 

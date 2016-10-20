@@ -41,7 +41,7 @@ pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
     for m in &config.Mongo {
         let id = format!("mongo#{}#{}@{}:{}",
                          m.Name, m.User.as_ref().unwrap_or(&"''".to_string()), m.Host, m.Port );
-        info!("Created name of Mongo collector: {}", id);
+        info!("Created instance of Mongo collector: {}", id);
 
         let collector = Mongo {
             id: id, name: m.Name.clone(), user: m.User.clone(), password: m.Password.clone(),
@@ -63,7 +63,6 @@ impl Collector for Mongo {
                 self.client = Some(client);
                 Ok(())
             },
-            // TODO: Simplify
             Err(err) => Err(Box::new(super::Error::InitError(err.description().to_string())))
         }
     }
@@ -73,12 +72,10 @@ impl Collector for Mongo {
     }
 
     fn collect(&self) -> Result<Vec<Sample>, Error> {
-        // TODO: make this safe -> if let / match
         let mut metric_data = Vec::new();
 
         let mut rs_status = try!(self.rs_status()).into_iter()
             .map( |mut s| {s.tags.insert("name".to_string(), self.name.clone()); s });
-        trace!("rs_status = {:#?}", rs_status);
         metric_data.extend(&mut rs_status);
 
         debug!("metric_data = {:#?}", metric_data);

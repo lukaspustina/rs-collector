@@ -10,7 +10,6 @@ branches:
   - "/^v.*$/"
 os:
 - linux
-- osx
 matrix:
   allow_failures:
   - rust: nightly

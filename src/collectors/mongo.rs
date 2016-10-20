@@ -96,11 +96,11 @@ impl Collector for Mongo {
             Metadata::new( "mongo.replicasets.members.mystate", Rate::Gauge, "",
                 "Show the local ReplicaSet state: 0 = startup, 1 = primary, 2 = secondary, 3 = recovering, 5 = startup2, 6 = unknown, 7 = arbiter, 8 = down, 9 = rollback, 10 = removed" ),
             Metadata::new( "mongo.replicasets.oplog_lag.min", Rate::Gauge, "ms",
-                "Show the min. oplog replication between the primary and its secondaries." ),
+                "Show the min. oplog replication lag between the primary and its secondaries." ),
             Metadata::new( "mongo.replicasets.oplog_lag.avg", Rate::Gauge, "ms",
-                "Show the avg. oplog replication between the primary and its secondaries." ),
+                "Show the avg. oplog replication lag between the primary and its secondaries." ),
             Metadata::new( "mongo.replicasets.oplog_lag.max", Rate::Gauge, "ms",
-                "Show the max. oplog replication between the primary and its secondaries." ),
+                "Show the max. oplog replication lag between the primary and its secondaries." ),
         ]
     }
 }
@@ -181,7 +181,7 @@ fn calculate_oplog_lag(document: &Document) -> Result<(f64, f64, f64), Error> {
     let members = if let Some(&Bson::Array(ref members)) = document.get("members") {
         members
     } else {
-        let msg = format!("");
+        let msg = format!("Cloud not parse members array.");
         return Err(Error::CollectionError(msg))
     };
 
@@ -191,19 +191,19 @@ fn calculate_oplog_lag(document: &Document) -> Result<(f64, f64, f64), Error> {
         let member = if let &Bson::Document(ref member) = m {
             member
         } else {
-            let msg = format!("");
+            let msg = format!("Invalid member format.");
             return Err(Error::CollectionError(msg))
         };
         let state = if let Some(&Bson::I32(state)) = member.get("state") {
             state
         } else {
-            let msg = format!("");
+            let msg = format!("Missing 'state' element in member document.");
             return Err(Error::CollectionError(msg))
         };
         let optimeDate = if let Some(&Bson::UtcDatetime(ref optimeDate)) = member.get("optimeDate") {
             optimeDate
         } else {
-            let msg = format!("");
+            let msg = format!("Missing 'optimeDate' element in member document.");
             return Err(Error::CollectionError(msg))
         };
 
@@ -218,8 +218,12 @@ fn calculate_oplog_lag(document: &Document) -> Result<(f64, f64, f64), Error> {
     let mut max = f64::NEG_INFINITY;
     let mut avg = 0f64;
 
+    if primary_date.is_none() {
+        let msg = format!("No primary found in members array.");
+        return Err(Error::CollectionError(msg))
+    }
+
     for d in secondary_dates.iter() {
-        // TODO: Check if primary is set
         let diff = (*primary_date.unwrap() - **d).num_milliseconds() as f64;
         min = min.min(diff);
         max = max.max(diff);

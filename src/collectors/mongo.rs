@@ -94,13 +94,13 @@ impl Collector for Mongo {
     fn metadata(&self) -> Vec<Metadata> {
         vec![
             Metadata::new( "mongo.replicasets.members.mystate", Rate::Gauge, "",
-                "Show the local ReplicaSet state: 0 = startup, 1 = primary, 2 = secondary, 3 = recovering, 5 = startup2, 6 = unknown, 7 = arbiter, 8 = down, 9 = rollback, 10 = removed" ),
+                "Show the local replica set state: 0 = startup, 1 = primary, 2 = secondary, 3 = recovering, 5 = startup2, 6 = unknown, 7 = arbiter, 8 = down, 9 = rollback, 10 = removed" ),
             Metadata::new( "mongo.replicasets.oplog_lag.min", Rate::Gauge, "ms",
-                "Show the min. oplog replication lag between the primary and its secondaries." ),
+                "Show the min. oplog replication lag between the primary and its secondaries. This value is measured only on the replica set's primary." ),
             Metadata::new( "mongo.replicasets.oplog_lag.avg", Rate::Gauge, "ms",
-                "Show the avg. oplog replication lag between the primary and its secondaries." ),
+                "Show the avg. oplog replication lag between the primary and its secondaries. This value is measured only on the replica set's primary." ),
             Metadata::new( "mongo.replicasets.oplog_lag.max", Rate::Gauge, "ms",
-                "Show the max. oplog replication lag between the primary and its secondaries." ),
+                "Show the max. oplog replication lag between the primary and its secondaries. This value is measured only on the replica set's primary." ),
         ]
     }
 }

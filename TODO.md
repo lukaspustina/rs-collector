@@ -37,7 +37,9 @@
 - [+] Postfix metrics
   - [x] Queue len
   - [ ] Send / Recv stats
-- [ ] MongoDB replication metrics
+- [+] MongoDB
+  - [+] replication metrics
+  - [ ] other metrics?
 - [ ] Docker
 - [ ] ifconfig / network inferface frame metrics
 - [ ] Add internal metrics `rs-collector.*`

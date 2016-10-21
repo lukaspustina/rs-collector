@@ -38,11 +38,22 @@
   - [x] Queue len
   - [ ] Send / Recv stats
 - [+] MongoDB
-  - [+] replication metrics
+  - [+] replication metrics -- cf. [replSetGetStatus](https://docs.mongodb.com/manual/reference/command/replSetGetStatus/)
+    - [x] myState (A)
+    - [+] Oplog replication lag (A)
+      - [ ] Explain lag spikes due to idle times -- cf. [Mongo documentation](https://docs.mongodb.com/manual/tutorial/troubleshoot-replica-sets/#check-the-replication-lag)
+      - [ ] Show alert example
+    - [ ] Heartbeat latency = lastHeartbeatRecv - lastHeartbeat (A)
+    - [ ] roundtrip time = pingMs
+    - [ ] uptime = uptime -> Rate
+    - [ ] health = health only from point of view of primary (A)
   - [ ] other metrics?
+- [x] Internal metrics `rs-collector.*`
+  - [x] Version --  can also be used to check liveliness and as heartbeat
+  - [x] Number of transmitted samples -- can also be used to check liveliness and as heartbeat
+  - [x] RSS cf. [procinfo](https://danburkert.github.io/procinfo-rs/procinfo/pid/struct.Status.html) -- can also be used to check liveliness and as heartbeat
 - [ ] Docker
 - [ ] ifconfig / network inferface frame metrics
-- [ ] Add internal metrics `rs-collector.*`
 
 - [ ] Ceph metrics
 - [ ] MySQL performance metrics

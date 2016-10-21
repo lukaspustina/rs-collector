@@ -51,6 +51,10 @@ pub fn create_collectors(config: &Config) -> Vec<Box<Collector + Send>> {
     let mut postfix = postfix::create_instances(config);
     collectors.append(&mut postfix);
 
+     // Create internal rs-collector collector instance
+    let mut rscollector = rscollector::create_instances(config);
+    collectors.append(&mut rscollector);
+
     collectors
 }
 
@@ -58,4 +62,5 @@ pub mod galera;
 pub mod hasipaddr;
 pub mod mongo;
 pub mod postfix;
+pub mod rscollector;
 

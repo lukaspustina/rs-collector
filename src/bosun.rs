@@ -1,4 +1,6 @@
-use bosun_emitter::{BosunClient, Datum};
+use collectors::rscollector::RS_COLLECTOR_STATS_SAMPLES_METRICNAME;
+
+use bosun_emitter::{BosunClient, Datum, EmitterResult};
 use bosun_emitter;
 use chan::Receiver;
 use chan;
@@ -103,21 +105,17 @@ impl Bosun {
             loop {
                 chan_select! {
                     timer.recv() => {
-                        debug!("I've been ticked. Current sample queue length is {:#?}. Sending data now.", &self.queue.len());
-                        for mut s in self.queue.drain(..) {
-                            let value = format!("{}", &s.value);
-                            s.tags.insert("host".to_string(), self.hostname.clone());
-                            s.tags.extend(self.default_tags.clone());
-                            let d = Datum {
-                                metric: &s.metric, timestamp: s.time as i64, value: &value, tags: &s.tags };
-                            trace!("Sending datum {:?} to Bosun.", &d);
-                            match self.bosun_client.emit_datum(&d) {
+                        let queue_len = self.queue.len() as f64 + 1f64;
+                        self.queue.push(Sample::new(RS_COLLECTOR_STATS_SAMPLES_METRICNAME, queue_len));
+                        debug!("I've been ticked. Current sample queue length is {:#?}. Sending data now.", queue_len);
+                        for s in self.queue.drain(..) {
+                            match send_sample_to_bosun(s, &self.bosun_client, &self.hostname, &self.default_tags) {
                                 Ok(_) => {},
                                 Err(err) => {
+                                    // TODO: We should not just drop the sample / datum; maybe we need to pass it back
+                                    // to a ring buffer
                                     error!("Failed to send datum to Bosun, because {:?}", err);
                                 }
-                                // TODO: We should not just drop the sample / datum; maybe we need to pass it back to
-                                // ring buffer
                             }
                         }
                     },
@@ -154,4 +152,14 @@ impl Bosun {
             info!("Bosun thread finished.");
         })
     }
+}
+
+fn send_sample_to_bosun(mut s: Sample, bosun_client: &BosunClient, hostname: &str, default_tags: &Tags) -> EmitterResult {
+    let value = format!("{}", &s.value);
+    s.tags.insert("host".to_string(), hostname.to_string());
+    s.tags.extend(default_tags.clone());
+    let d = Datum {
+        metric: &s.metric, timestamp: s.time as i64, value: &value, tags: &s.tags };
+    trace!("Sending datum {:?} to Bosun.", &d);
+    bosun_client.emit_datum(&d)
 }

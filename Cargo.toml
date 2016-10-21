@@ -1,6 +1,6 @@
 [package]
 name = "rs-collector"
-version = "0.0.7"
+version = "0.0.8"
 authors = ["Lukas Pustina <lukas@pustina.net>"]
 description = "An scollector compatible telemetry collector written in Rust"
 repository = "https://github.com/lukaspustina/rs-collector.git"
@@ -39,6 +39,9 @@ toml = "0.1"
 version = "7.1.2"
 default-features = false
 features = ["socket"]
+
+[target.'cfg(target_os = "linux")'.dependencies]
+procinfo = "0.2.3"
 
 [dev-dependencies]
 mktemp = "0.1.2"

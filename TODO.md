@@ -48,10 +48,10 @@
     - [ ] uptime = uptime -> Rate
     - [ ] health = health only from point of view of primary (A)
   - [ ] other metrics?
-- [ ] Internal metrics `rs-collector.*`
-  - [ ] Version --  can also be used to check liveliness and as heartbeat
-  - [ ] Number of transmitted samples -- can also be used to check liveliness and as heartbeat
-  - [ ] RSS cf. [procinfo](https://danburkert.github.io/procinfo-rs/procinfo/pid/struct.Status.html) -- can also be used to check liveliness and as heartbeat
+- [x] Internal metrics `rs-collector.*`
+  - [x] Version --  can also be used to check liveliness and as heartbeat
+  - [x] Number of transmitted samples -- can also be used to check liveliness and as heartbeat
+  - [x] RSS cf. [procinfo](https://danburkert.github.io/procinfo-rs/procinfo/pid/struct.Status.html) -- can also be used to check liveliness and as heartbeat
 - [ ] Docker
 - [ ] ifconfig / network inferface frame metrics
 

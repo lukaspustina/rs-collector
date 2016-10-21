@@ -13,6 +13,7 @@ Please see [Todos](TODO.md).
 1. [HasIpAddr](#hasipaddr) -- Checks if a host has bound specified IPv4 address.
 1. [MongoDB](#mongo) -- Collects replicaset metrics
 1. [Postfix](#postfix) -- Collects queue lengths for all postfix queues.
+1. [rs-collector](#rs-collector) -- Collects internal metrics for rs-collector.
 
 See below for details about the collectors.
 
@@ -29,6 +30,13 @@ In our production cluster we have observed situations when none of the cluster m
 * `mongo.replicasets.oplog_lag.[min,avg,max]` collects the min, avg, and max oplog replication lag between a replica set's primary and the corresponding secondaries. These values are measured only on the currently active primary.
 
 ### Postfix
+
+### rs-collector
+* `rs-collector.stats.rss` collects the resident set size (physical memory) in KB consumed by rs-collector; only supported on Linux.
+* `rs-collector.stats.samples` collects the number of transmitted samples.
+* `rs-collector.versio` collects the version 'x.y.z' of rs-collector as x * 1.000.0000 + y * 1000 + z.
+
+These metrics can also be used to check the liveliness of rs-collector and as heartbeat.
 
 ## Configuration
 

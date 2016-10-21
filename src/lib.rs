@@ -16,6 +16,8 @@ extern crate itertools;
 extern crate mongodb;
 #[macro_use]
 extern crate mysql;
+#[cfg(target_os = "linux")]
+extern crate procinfo;
 extern crate rustc_serialize;
 extern crate toml;
 

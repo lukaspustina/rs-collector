@@ -40,6 +40,9 @@ version = "7.1.2"
 default-features = false
 features = ["socket"]
 
+[target.'cfg(target_os = "linux")'.dependencies]
+procinfo = "0.2.3"
+
 [dev-dependencies]
 mktemp = "0.1.2"
 

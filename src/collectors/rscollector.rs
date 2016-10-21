@@ -51,15 +51,16 @@ impl Collector for RsCollector {
                           Rate::Gauge,
                           "",
                           "Shows the version 'x.y.z' of rs-collector as x*1.000.0000 + y*1000 + z."),
-             Metadata::new("rs-collector.stats.rss",
+            Metadata::new("rs-collector.stats.rss",
                           Rate::Gauge,
                           "KB",
-                          "Shows resident set size (physical memory) in KB consumed by rs-collector; if supported."),
-             // This value is actually computed and send in the Bosun module directly.
-             Metadata::new(RS_COLLECTOR_STATS_SAMPLES_METRICNAME,
+                          "Shows the resident set size (physical memory) in KB consumed by rs-collector; if supported."),
+            // This value is actually computed and send in the Bosun module directly.
+            Metadata::new(RS_COLLECTOR_STATS_SAMPLES_METRICNAME,
                           Rate::Gauge,
                           "Samples",
-                          "Shows transmitted samples."),        ]
+                          "Shows the number of transmitted samples."),
+        ]
     }
 }
 

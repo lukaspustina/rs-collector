@@ -20,6 +20,7 @@ extern crate rustc_serialize;
 extern crate toml;
 
 pub mod bosun;
+extern crate chrono;
 pub mod collectors;
 pub mod config;
 pub mod scheduler;

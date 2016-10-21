@@ -10,9 +10,11 @@ use collectors::{Collector, Error, Id};
 use config::Config;
 
 use bson::{Bson, Document};
+use chrono::*;
 use mongodb::{Client, CommandType, Error as MongodbError, ThreadedClient};
 use mongodb::db::{ThreadedDatabase};
 use std::error::Error as StdError;
+use std::f64;
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]
@@ -40,7 +42,7 @@ pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
     let mut names: Vec<Box<Collector + Send>> = Vec::new();
     for m in &config.Mongo {
         let id = format!("mongo#{}#{}@{}:{}",
-                         m.Name, m.User.as_ref().unwrap_or(&"''".to_string()), m.Host, m.Port );
+                         m.Name, m.User.as_ref().unwrap_or(&"''".to_string()), m.Host, m.Port);
         info!("Created instance of Mongo collector: {}", id);
 
         let collector = Mongo {
@@ -75,7 +77,10 @@ impl Collector for Mongo {
         let mut metric_data = Vec::new();
 
         let mut rs_status = try!(self.rs_status()).into_iter()
-            .map( |mut s| {s.tags.insert("name".to_string(), self.name.clone()); s });
+            .map(|mut s| {
+                s.tags.insert("name".to_string(), self.name.clone());
+                s
+            });
         metric_data.extend(&mut rs_status);
 
         debug!("metric_data = {:#?}", metric_data);
@@ -89,7 +94,13 @@ impl Collector for Mongo {
     fn metadata(&self) -> Vec<Metadata> {
         vec![
             Metadata::new( "mongo.replicasets.members.mystate", Rate::Gauge, "",
-                "Show the local ReplicaSet state: 0 = startup, 1 = primary, 2 = secondary, 3 = recovering, 5 = startup2, 6 = unknown, 7 = arbiter, 8 = down, 9 = rollback, 10 = removed" ),
+                "Show the local replica set state: 0 = startup, 1 = primary, 2 = secondary, 3 = recovering, 5 = startup2, 6 = unknown, 7 = arbiter, 8 = down, 9 = rollback, 10 = removed" ),
+            Metadata::new( "mongo.replicasets.oplog_lag.min", Rate::Gauge, "ms",
+                "Show the min. oplog replication lag between the primary and its secondaries. This value is measured only on the replica set's primary." ),
+            Metadata::new( "mongo.replicasets.oplog_lag.avg", Rate::Gauge, "ms",
+                "Show the avg. oplog replication lag between the primary and its secondaries. This value is measured only on the replica set's primary." ),
+            Metadata::new( "mongo.replicasets.oplog_lag.max", Rate::Gauge, "ms",
+                "Show the max. oplog replication lag between the primary and its secondaries. This value is measured only on the replica set's primary." ),
         ]
     }
 }
@@ -98,13 +109,20 @@ impl Mongo {
     #[allow(non_snake_case)]
     fn rs_status(&self) -> Result<Vec<Sample>, Error> {
         let client = self.client.as_ref().unwrap();
-        let result = try!(query_rs_status(client));
+        let document = try!(query_rs_status(client));
 
-        let replicaset: String = if let Some(&Bson::String(ref set)) = result.get("set") {
+        let replicaset: String = if let Some(&Bson::String(ref set)) = document.get("set") {
             trace!("set: {}", set);
             set.to_string()
         } else {
             let msg = format!("Could not determine replica set for {}", self.id);
+            return Err(Error::CollectionError(msg));
+        };
+        let myState: i32 = if let Some(&Bson::I32(myState)) = document.get("myState") {
+            trace!("myState: {}", myState);
+            myState
+        } else {
+            let msg = format!("Could not determine myState for {}", self.id);
             return Err(Error::CollectionError(msg));
         };
 
@@ -112,11 +130,30 @@ impl Mongo {
         tags.insert("replicaset".to_string(), replicaset);
         let mut samples = Vec::new();
 
-        if let Some(&Bson::I32(myState)) = result.get("myState") {
-            trace!("myState: {}", myState);
-            samples.push(
-                Sample::new_with_tags("mongo.replicasets.members.mystate", myState, tags.clone())
-            );
+        samples.push(
+            Sample::new_with_tags("mongo.replicasets.members.mystate", myState, tags.clone())
+        );
+
+        // if replicaset primary
+        if myState == 1 {
+            let oplog_lag_result = calculate_oplog_lag(&document);
+            match oplog_lag_result {
+                Ok((min, avg, max)) => {
+                    samples.push(
+                        Sample::new_with_tags("mongo.replicasets.oplog_lag.min", min, tags.clone())
+                    );
+                    samples.push(
+                        Sample::new_with_tags("mongo.replicasets.oplog_lag.avg", avg, tags.clone())
+                    );
+                    samples.push(
+                        Sample::new_with_tags("mongo.replicasets.oplog_lag.max", max, tags.clone())
+                    );
+                },
+                Err(err) => {
+                    // Don't error out, because we already have sensible information like myState
+                    error!("Could not determine oplog_log for {}, because '{}'", self.id, err);
+                },
+            }
         }
 
         Ok(samples)
@@ -139,3 +176,60 @@ impl From<MongodbError> for Error {
     }
 }
 
+#[allow(non_snake_case)]
+fn calculate_oplog_lag(document: &Document) -> Result<(f64, f64, f64), Error> {
+    let members = if let Some(&Bson::Array(ref members)) = document.get("members") {
+        members
+    } else {
+        let msg = format!("Cloud not parse members array.");
+        return Err(Error::CollectionError(msg))
+    };
+
+    let mut primary_date: Option<&DateTime<UTC>> = None;
+    let mut secondary_dates: Vec<&DateTime<UTC>> = Vec::new();
+    for m in members {
+        let member = if let &Bson::Document(ref member) = m {
+            member
+        } else {
+            let msg = format!("Invalid member format.");
+            return Err(Error::CollectionError(msg))
+        };
+        let state = if let Some(&Bson::I32(state)) = member.get("state") {
+            state
+        } else {
+            let msg = format!("Missing 'state' element in member document.");
+            return Err(Error::CollectionError(msg))
+        };
+        let optimeDate = if let Some(&Bson::UtcDatetime(ref optimeDate)) = member.get("optimeDate") {
+            optimeDate
+        } else {
+            let msg = format!("Missing 'optimeDate' element in member document.");
+            return Err(Error::CollectionError(msg))
+        };
+
+        // Primary date
+        if state == 1 {
+            primary_date = Some(optimeDate);
+        } else {
+            secondary_dates.push(optimeDate);
+        }
+    }
+    let mut min = f64::INFINITY;
+    let mut max = f64::NEG_INFINITY;
+    let mut avg = 0f64;
+
+    if primary_date.is_none() {
+        let msg = format!("No primary found in members array.");
+        return Err(Error::CollectionError(msg))
+    }
+
+    for d in secondary_dates.iter() {
+        let diff = (*primary_date.unwrap() - **d).num_milliseconds() as f64;
+        min = min.min(diff);
+        max = max.max(diff);
+        avg += diff;
+    }
+    avg /= secondary_dates.len() as f64;
+
+    Ok((min, avg, max))
+}

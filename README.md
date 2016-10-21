@@ -26,6 +26,7 @@ In our production cluster we have observed situations when none of the cluster m
 
 ### Mongo
 * `mongo.replicasets.members.mystate` collects the "myState" variable from each replica set member. This allows to compute if the particular replica set is in a sane state.
+* `mongo.replicasets.oplog_lag.[min,avg,max]` collects the min, avg, and max oplog replication lag between a replica set's primary and the corresponding secondaries. These values are measured only on the currently active primary.
 
 ### Postfix
 

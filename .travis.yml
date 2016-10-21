@@ -12,10 +12,11 @@ os:
 - linux
 matrix:
   allow_failures:
-  - rust: nightly
+  - rust: stable
+  - rust: beta
 after_success: |
   [ $TRAVIS_OS_NAME = linux ] &&
-  [ $TRAVIS_RUST_VERSION = stable ] &&
+  [ $TRAVIS_RUST_VERSION = nightly ] &&
   [ $TRAVIS_BRANCH = master ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
   cargo doc --no-deps &&
@@ -40,7 +41,7 @@ deploy:
     tags: true
     condition:
     - "$TRAVIS_OS_NAME == linux"
-    - "$TRAVIS_RUST_VERSION == stable"
+    - "$TRAVIS_RUST_VERSION == nightly"
 after_deploy:
 - cd /home/travis/build/lukaspustina/rs-collector; cargo publish --token ${CRATES_IO_TOKEN}
 env:

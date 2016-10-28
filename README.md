@@ -9,11 +9,11 @@ Please see [Todos](TODO.md).
 
 ## Collectors
 
-1. [Galera](#galera) -- Collects metrics about the cluster status and cluster sync performance of a Percona Galera MySQL cluster.
-1. [HasIpAddr](#hasipaddr) -- Checks if a host has bound specified IPv4 address.
-1. [MongoDB](#mongo) -- Collects replicaset metrics
-1. [Postfix](#postfix) -- Collects queue lengths for all postfix queues.
-1. [rs-collector](#rs-collector) -- Collects internal metrics for rs-collector.
+1. [Galera](#galera) - Collects metrics about the cluster status and cluster sync performance of a Percona Galera MySQL cluster.
+1. [HasIpAddr](#hasipaddr) - Checks if a host has bound specific IPv4 addresses.
+1. [MongoDB](#mongo) - Collects replicaset metrics
+1. [Postfix](#postfix) - Collects queue lengths for all postfix queues.
+1. [rs-collector](#rs-collector) - Collects internal metrics for rs-collector.
 
 See below for details about the collectors.
 
@@ -36,7 +36,7 @@ In our production cluster we have observed situations when none of the cluster m
 * `rs-collector.stats.samples` collects the number of transmitted samples.
 * `rs-collector.versio` collects the version 'x.y.z' of rs-collector as x * 1.000.0000 + y * 1000 + z.
 
-These metrics can also be used to check the liveliness of rs-collector and as heartbeat.
+These metrics can also be used to check the liveliness of rs-collector and as a heartbeat.
 
 ## Configuration
 

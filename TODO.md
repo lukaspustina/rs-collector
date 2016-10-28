@@ -14,6 +14,7 @@
 - [x] Automate packaging for Ubuntu
   - [x] Ansible Role
   - [x] Update Readme: Link to package and Ansible role
+- [ ] Redo collectors as real state machine
 - [+] Failure Modes
   - [x] Reinitialize collector if collection fails.
     - [x] Reconnect Logic for Galera Collector
@@ -22,6 +23,7 @@
 - [x] Add timestamps to log messages
 - [ ] Tests
 - [ ] Make it safe
+  - [ ] Clippy-fy
   - [ ] Fix Todos
   - [ ] Eliminate unwraps
 - [ ] Rust documentation

@@ -22,6 +22,8 @@
   - [ ] Remove collector if collection thread does not respond anymore.
 - [x] Add timestamps to log messages
 - [ ] Tests
+- [ ] Clean up
+  - https://llogiq.github.io/2016/02/11/rustic.html
 - [ ] Make it safe
   - [ ] Clippy-fy
   - [ ] Fix Todos

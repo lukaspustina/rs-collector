@@ -57,6 +57,7 @@
   - [x] Number of transmitted samples -- can also be used to check liveliness and as heartbeat
   - [x] RSS cf. [procinfo](https://danburkert.github.io/procinfo-rs/procinfo/pid/struct.Status.html) -- can also be used to check liveliness and as heartbeat
 - [ ] Docker
+  - [ ] Use [rust-docker](https://github.com/ghmlee/rust-docker)
 - [ ] ifconfig / network inferface frame metrics
 
 - [ ] Ceph metrics

@@ -59,6 +59,8 @@
 - [ ] Docker
   - [ ] Use [rust-docker](https://github.com/ghmlee/rust-docker)
 - [ ] ifconfig / network inferface frame metrics
+- [ ] DNS
+  - [ ] Serial numbers of all authoritive servers
 
 - [ ] Ceph metrics
 - [ ] MySQL performance metrics

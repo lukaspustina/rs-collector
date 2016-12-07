@@ -51,6 +51,7 @@
     - [ ] roundtrip time = pingMs
     - [ ] uptime = uptime -> Rate
     - [ ] health = health only from point of view of primary (A)
+  - [ ] Balancer Status
   - [ ] other metrics?
 - [x] Internal metrics `rs-collector.*`
   - [x] Version --  can also be used to check liveliness and as heartbeat

@@ -7,6 +7,7 @@ use toml;
 
 use collectors::galera::GaleraConfig;
 use collectors::hasipaddr::HasIpAddrConfig;
+use collectors::jvm::JvmConfig;
 use collectors::postfix::PostfixConfig;
 use collectors::mongo::MongoConfig;
 
@@ -26,6 +27,8 @@ pub struct Config {
     pub Galera: Option<GaleraConfig>,
     /// HasIpAddr config; if enabled
     pub HasIpAddr: Option<HasIpAddrConfig>,
+    /// JVM config; if enabled
+    pub Jvm: Vec<JvmConfig>,
     /// Mongo configs; if enabled
     pub Mongo: Vec<MongoConfig>,
     /// Postfix config; if enabled
@@ -70,6 +73,7 @@ impl Default for Config {
             Tags: Tags::new(),
             Galera: None,
             HasIpAddr: None,
+            Jvm: Vec::new(),
             Mongo: Vec::new(),
             Postfix: None,
             DontSend: Some(false),

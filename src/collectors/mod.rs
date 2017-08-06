@@ -2,6 +2,8 @@ use bosun::{Metadata, Sample};
 use config::Config;
 
 use std::fmt;
+use std::error::Error as StdError;
+use std::num::{ParseIntError, ParseFloatError};
 
 
 #[derive(Debug)]
@@ -18,6 +20,20 @@ impl fmt::Display for Error {
             &Error::CollectionError(ref msg) => write!(f, "Collectors error: Collection failed because {}", msg),
             &Error::ShutdownError(ref msg) => write!(f, "Collectors error: Shutdown failed because {}", msg),
         }
+    }
+}
+
+impl From<ParseIntError> for Error {
+    fn from(err: ParseIntError) -> Self {
+        let msg = format!("Failed to parse Int, because '{}'", err.description());
+        Error::CollectionError(msg)
+    }
+}
+
+impl From<ParseFloatError> for Error {
+    fn from(err: ParseFloatError) -> Self {
+        let msg = format!("Failed to parse Int, because '{}'", err.description());
+        Error::CollectionError(msg)
     }
 }
 
@@ -43,7 +59,11 @@ pub fn create_collectors(config: &Config) -> Vec<Box<Collector + Send>> {
     let mut hasipaddr = hasipaddr::create_instances(config);
     collectors.append(&mut hasipaddr);
 
-     // Create Postfix collector instances
+    // Create Jvm collector instance
+    let mut jvm = jvm::create_instances(config);
+    collectors.append(&mut jvm);
+
+     // Create Mongo collector instances
     let mut mongo = mongo::create_instances(config);
     collectors.append(&mut mongo);
 
@@ -60,6 +80,7 @@ pub fn create_collectors(config: &Config) -> Vec<Box<Collector + Send>> {
 
 pub mod galera;
 pub mod hasipaddr;
+pub mod jvm;
 pub mod mongo;
 pub mod postfix;
 pub mod rscollector;

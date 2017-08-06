@@ -2,8 +2,6 @@ use bosun::{Metadata, Rate, Sample, Tags};
 use collectors::*;
 use config::Config;
 
-use std::error::Error as StdError;
-use std::num::ParseIntError;
 use std::process::{Command, Output};
 use std::io::Result as IoResult;
 
@@ -150,13 +148,6 @@ fn get_queue_len(q_name: &str) -> Result<Vec<QueueLength>, Error> {
 fn execute_qshape_for_queue(q_name: &str) -> IoResult<Output> {
     // TODO: use timeout for execution
     Command::new("/usr/sbin/qshape").arg(q_name).output()
-}
-
-impl From<ParseIntError> for Error {
-    fn from(err: ParseIntError) -> Self {
-        let msg = format!("Failed to parse qshape output, because '{}'", err.description());
-        Error::CollectionError(msg)
-    }
 }
 
 impl From<QueueLength> for Option<Sample> {

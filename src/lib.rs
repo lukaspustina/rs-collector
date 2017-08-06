@@ -18,6 +18,7 @@ extern crate mongodb;
 extern crate mysql;
 #[cfg(target_os = "linux")]
 extern crate procinfo;
+extern crate regex;
 extern crate rustc_serialize;
 extern crate toml;
 

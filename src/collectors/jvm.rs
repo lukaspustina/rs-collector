@@ -171,7 +171,7 @@ fn metadata() -> HashMap<String, Metadata> {
     metadata.insert("YGCT".to_string(),
         Metadata::new(format!("{}.young_generation_gc_time", METRIC_NAME_GC),
                       Rate::Counter,
-                      "ms",
+                      "s",
                       "YGCT: Young generation garbage collection time"));
     metadata.insert("FGC".to_string(),
         Metadata::new(format!("{}.full_gc_events", METRIC_NAME_GC),
@@ -181,12 +181,12 @@ fn metadata() -> HashMap<String, Metadata> {
     metadata.insert("FGCT".to_string(),
         Metadata::new(format!("{}.full_gc_time", METRIC_NAME_GC),
                       Rate::Counter,
-                      "ms",
+                      "s",
                       "FGCT: Full garbage collection time"));
     metadata.insert("GCT".to_string(),
         Metadata::new(format!("{}.total_gc_time", METRIC_NAME_GC),
                       Rate::Counter,
-                      "ms",
+                      "s",
                       "GCT: Total garbage collection time"));
 
     metadata

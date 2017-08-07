@@ -2,7 +2,7 @@ BASE_NAME=rs-collector
 BIN_NAME=rs-collector
 
 all:
-	@echo 'Example: BIN_DIR=../$(BASE_NAME)/target/debug ARCH=amd64 VERSION=0.1.0-alpha-3 TAG=$VERSION DIST=trusty make package'
+	@echo 'Example: SRC_DIR=../../ BIN=../../target/release/$(BIN_NAME) ARCH=amd64 VERSION=0.1.0-alpha-3 TAG=$VERSION DIST=trusty make package'
 
 package: $(BASE_NAME)-$(VERSION)-$(DIST)-$(ARCH).deb
 
@@ -16,9 +16,9 @@ clean:
 	-rm $(BASE_NAME)-$(VERSION)-$(DIST)-$(ARCH).deb
 
 $(BASE_NAME)/DEBIAN/control: templates/DEBIAN/control $(BASE_NAME)/usr/sbin/$(BIN_NAME) $(BASE_NAME)/DEBIAN
-	SIZE=`du -s $(BASE_NAME)/usr/sbin/$(BIN_NAME) | awk '{ print $$1}'`; SAN_VERSION=`echo $$VERSION | sed 's/^[a-z]*//'`; sed "s/@@PACKAGE_NAME@@/$(BASE_NAME)/; s/@@VERSION@@/$${SAN_VERSION}/; s/@@ARCH@@/$(ARCH)/; s/@@SIZE@@/$${SIZE}/" $< > $@
+	SIZE=`du -s $(BASE_NAME)/usr/sbin/$(BIN_NAME) | awk '{ print $$1}'`; SANE_VERSION=`echo $$VERSION | sed 's/^[a-z]*//'`; sed "s/@@PACKAGE_NAME@@/$(BASE_NAME)/; s/@@VERSION@@/$${SANE_VERSION}/; s/@@ARCH@@/$(ARCH)/; s/@@SIZE@@/$${SIZE}/" $< > $@
 
-$(BASE_NAME)/usr/sbin/$(BIN_NAME): $(BIN_DIR)/$(BIN_NAME) $(BASE_NAME)/usr/sbin
+$(BASE_NAME)/usr/sbin/$(BIN_NAME): $(BIN) $(BASE_NAME)/usr/sbin
 	cp $< $@
 
 $(BASE_NAME)/DEBIAN/postinst: templates/DEBIAN/postinst
@@ -31,6 +31,9 @@ $(BASE_NAME)/DEBIAN/prerm: templates/DEBIAN/prerm
 
 $(BASE_NAME)/DEBIAN/conffiles: templates/DEBIAN/conffiles
 	cp $< $@
+
+$(BASE_NAME)/etc/$(BASE_NAME):
+	mkdir -p $@
 
 $(BASE_NAME)/usr/sbin:
 	mkdir -p $@

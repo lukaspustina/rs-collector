@@ -24,8 +24,9 @@ _rs-collector_ is a [Bosun](https://bosun.org) compatible collector for various 
   - [rs-collector Internal Metrics](#rs-collector-internal-metrics)
 - [Configuration](#configuration)
 - [Installation](#installation)
-  - [Ubuntu](#ubuntu)
-  - [From Source](#from-source)
+  - [Ubuntu [x86_64 and Raspberry Pi]](#ubuntu-x86_64-and-raspberry-pi)
+  - [Binary](#binary)
+  - [Sources](#sources)
   - [Ansible](#ansible)
 - [Know Issues](#know-issues)
 - [Roadmap](#roadmap)
@@ -203,16 +204,20 @@ Please see this [example](examples/rs-collector.conf).
 
 ## Installation
 
-### Ubuntu
+### Ubuntu [x86_64 and Raspberry Pi]
 
-Pleae add my [PackageCloud] open source repository and install _rs-collector_ via apt.
+Pleae add my [PackageCloud](https://packagecloud.io/lukaspustina/opensource) open source repository and install _rs-collector_ via apt.
 
 ```bash
 curl -s https://packagecloud.io/install/repositories/lukaspustina/opensource/script.deb.sh | sudo bash
 sudo apt-get install rs-collector
 ```
 
-### From Source
+### Binaries [x86_64 and Raspberry Pi]
+
+There are binaries available at the GitHub [release page](https://github.com/lukaspustina/rs-collector/releases) compiled on Ubuntu.
+
+### Sources
 
 Please install Rust via [rustup](https://www.rustup.rs) and then run
 

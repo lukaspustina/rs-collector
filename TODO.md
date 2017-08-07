@@ -5,7 +5,7 @@
 - [x] Fix memory leak in chan::tick
   cf. [https://github.com/BurntSushi/chan/issues/11](https://github.com/BurntSushi/chan/issues/11) and branch mem_leak_chan_tick.
 
-  This is known behaviour of chan::tick. The memory leak led to 236 KB allocated memory during 64 hours. That doesn't hurt too much especially because we plan to restart the process every 24 because of log rotation. Skipping this for now.
+  This is known behavior of chan::tick. The memory leak led to 236 KB allocated memory during 64 hours. That doesn't hurt too much especially because we restart the process every 24 for log rotation. Skipping this for now.
 
 - [x] Transform all wsrep values to metrics
 - [x] Add metadata for all wsrep values
@@ -62,6 +62,8 @@
 - [ ] ifconfig / network inferface frame metrics
 - [ ] DNS
   - [ ] Serial numbers of all authoritive servers
+
+## One day, maybe
 
 - [ ] Ceph metrics
 - [ ] MySQL performance metrics

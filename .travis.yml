@@ -1,50 +1,64 @@
+dist: trusty
 language: rust
-rust:
-- stable
-- beta
-- nightly
+services: docker
+sudo: required
+env:
+  global:
+  - CRATE_NAME=rs-collector
+  - secure: S2QBfk4iIpztHX5L32YR/iP8Ar7drx8hwRCz7G+1aR2jUl4qyzE5JASSjEcuaIk4Wa5eU3Spm79PTmQqW4BhUZnEhZKqE214jXB7e5ay/X0YximqoB0TJjoXNhkqvI0u+EUiSPRdxQXKNWL6DVhyMvIObeooR1TsEA6Dak3ZIJwyfoTgTbz6YiqD+CsaX7ko+uUQfbHdsxbRpLozc5W75F2vgMKTZaQ4h289wT2NwTIk2t8UDlqojzwje26JbwyZzIWRQkfKaJyuY9HXeV9Mz4IVDnv13+ojroMzImEJqKoyl+Dfbll9L5ctYcxOXc+RnFHdNaeiiNQlYD5P3YZzQImwlLvw5pbudeWVRn2enozKHa6SGn9uBIjat5kTSBw+GZw01YCSX4wI+iGWGA5KLcdQMtqvsuQ5Q7eNgt7ui9Shc4s59GIzhVio6zhyb/PdIJGPiRc0BPZfNyfedd6rAS8D7dwE8FYDnlBxE/bpiyqdlgY+j2VWpW+LPtROuNklYrU5ALUGN1uYfN6tSLCxo5MIJMQasUkrVZHJ662cAAPRq9hRsYWIt8EfVQO0M7JsCSCSJqrU1H0zE7u5Cd7/Sxp2rMmwc3ASAo2kzsvcfwdMJC3/QzvDi1BJoXyPNTOiJudN81+JldGkW/qjDh17TCgCVCAu4wjHIqllvPS39eU=
+matrix:
+  include:
+  - env: TARGET=x86_64-unknown-linux-gnu DEPLOY_ARCH=amd64
+  - env: TARGET=x86_64-unknown-linux-musl
+  - env: TARGET=x86_64-apple-darwin
+    os: osx
+  - env: TARGET=armv7-unknown-linux-gnueabihf DEPLOY_ARCH=armhf
+  - env: TARGET=x86_64-unknown-linux-gnu
+    rust: beta
+  - env: TARGET=x86_64-unknown-linux-gnu
+    rust: nightly
+  allow_failures:
+  - rust: beta
+  - rust: nightly
 branches:
   only:
   - master
   - travis-ci
   - "/^v.*$/"
-os:
-- linux
-matrix:
-  allow_failures:
-  - rust: stable
-  - rust: beta
-after_success: |
-  [ $TRAVIS_OS_NAME = linux ] &&
-  [ $TRAVIS_RUST_VERSION = nightly ] &&
-  [ $TRAVIS_BRANCH = master ] &&
-  [ $TRAVIS_PULL_REQUEST = false ] &&
-  cargo doc --no-deps &&
-  echo '<meta http-equiv=refresh content=0;url=rs-collector/index.html>' > target/doc/index.html &&
-  pip install --user ghp-import &&
-  /home/travis/.local/bin/ghp-import -n target/doc &&
-  git push -fq https://${GITHUB_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
+before_install: set -e
+install:
+- sh .ci/install.sh
+- source ~/.cargo/env || true
+script:
+- bash .ci/script.sh
+after_script: set +e
 before_deploy:
-- cd /home/travis/build/lukaspustina/rs-collector; cargo build --release
-- cd /home/travis/build/lukaspustina; git clone https://github.com/lukaspustina/rs-collector-deb.git
-- cd /home/travis/build/lukaspustina/rs-collector-deb; BIN_DIR=../rs-collector/target/release ARCH=amd64 VERSION=$TRAVIS_TAG TAG=$TRAVIS_TAG DIST=trusty make package
+- sh .ci/before_deploy.sh
 deploy:
-  provider: packagecloud
-  username: lukaspustina
-  token:
-    secure: aYbYmH2MTsUBTU7TlWTbKle1aFWZz+ALFejdr8tjSJ0VK45h7QtnsC1IDPuqraIV8NstB3wENZO5kHL3ENLyWDTXCMP/0TYlhlewQGGxlc4wB43jpe6SI4Y/fQDRUgk+2IdawOnri7Xntf650QzwTOUNYYw/OwqXwjVqaWg3Lh0o2RTp1kkS2c8sAVE+LgyUVgeWXdqonl/8katKutLf9GEui16SJ2swG+4t/hUq39MSJerqtFK2eFYXySxlcedwEmoVLQOLo428U4yxDAa2QXb0cTQSTg38KVwRmcQbhes0x2jFhDGFQLd+5AvEIRZqNKggWUWjbdv8S1qyZMqGgkIZSkIac4p1NN0tadv4Y8xt0HyvItxulvsNjcrwlVZmdkr1qfE7LVv6MNHf1YF9yjXVWEPyfZvW6PgJU5zT0PM0visckzJE5PzfkBNdxMfydkVi8y6UtFPcdfE+eG6SHzZlr2F888qe04n9KBwUBVFqtZo8jtuG4VxIam8Zizhh2sbQuEe993+EVcY1kNWvUNLmAgR5gTzXxP+5C4kjr8fi5TDegLLnqXy/h/KPMWrB0l9b74BBjkzC3VQOONPN6ZDCp1Wpb4rw11trS3+F/oPcg8zih7I21uyNZIiynjXai3EOpXAkTikCtMD+5NrinjizzXbqLPpHvkkik/Nt/FU=
-  repository: opensource
-  dist: ubuntu/trusty
-  package_glob: "**/*.deb"
-  skip_cleanup: true
-  on:
-    tags: true
-    condition:
-    - "$TRAVIS_OS_NAME == linux"
-    - "$TRAVIS_RUST_VERSION == nightly"
+  matrix:
+  - provider: packagecloud
+    username: lukaspustina
+    token:
+      secure: fCA7NaBLHi/jy73rdvw6Jz1fdKtQhp8o9l3pwLHnRdhFyqzgSxBK/hXtShjPhHUSKM1Crjk2CYIhOaA5tVN2lXflQxjaDkSDgW4MeiIIpPr2CR240SmGh/+U5DQ1UKN2+z0oxfohvteIAgMfcvZgl6ex4rPSGarw3L3/9VHMI7iS+ShotxnA9dbw0IZsmBMejYDY1xHYVqCHN60Yd/C1SlDAMJD2z0+bLRn1fR3dc9Gxj2bDzLK7vzAe7ORDnw+AHYB/9oUGMu94UCEQhJa4MFcngHwXEswH6jL6aDkQBzD5ZwcJ7WDNDWHJa67KayEwIorBjiszd2g7Bnf4xpObFdhkOJbSyt3gdyT7k3Ljb79HowAb5ySCI85YMZLb7TayBBF9zSEl2X0S3F/BovlHuXGehFUKxwSwLCtworShm90VJLN2hxpuYoPXBi3h8kyjZX5cBrUahqxI8Gp4eHfJ7Z9MlrErJq0HecrhujNM40w4baTwTch6t3h/PuTf0+6wKzXSY46pWN7SAjQcCWYCTEIFwUdr4RVe/pe7vLetuRJ1cc/ClSv2PxQF4cDHlwVD6SLXLU3jLiGmzHisZU0NBqvqZVCkpbDnF31/PlpMfY0aikXF3oA+XeSmicWR8bLlsAPTlf1NdCu+aJwIpaOVRLPmKEBVygDBjaX5l2tf/V0=
+    repository: opensource
+    dist: ubuntu/trusty
+    package_glob: "**/*.deb"
+    skip_cleanup: true
+    on:
+      tags: true
+      condition:
+      - "$TRAVIS_OS_NAME == linux"
+      - "$DEPLOY_ARCH"
+  - provider: releases
+    api_key:
+      secure: DGYtB0LUYX6YROgbbvyEMSZTNjF+HPJOWQE2trnat0vRfLyGfKtNPLcXFUgAUwzJ4fIBCbsXkwY94b50BEMYMhcIQIyXhkN7AzZ0Tv+tnN281QW8Ma+2ZXP3vug23v9S6ZtpuXVVSqFuJjAV92TSHO/BoWAGUlK6O3OgJlZ9i4u/venkz1fnUVTgmLsKaNVqyLKKlvkPe/T/CjH3P73b668U3Y9X4IiWLm9adJAhgGutWf+cRpRxRcnY9bh+GcpYq0MoR9FQIWREFtYty3OQZCnsc2FbPKfNm6dkgPzSe01O5Zenf+EfpC1wizEfrL4378a/BDF9F0jSjtIv+M98DJkIJS3zgJ5wQdKxuzYxcqmRs22kgQL1op4P2punvHu82k8rPq1qM80exWxVPMh5DtD6IE+hgOwNL7Mg4R9OHIYrZBXMcJkWS2y+FAwi83EhxpGcpZ4ANhdxIddyloHjnoP9rOxwqoX7iSkuK9zAtVyBPzBwTzd+UUPVFJmcV1HuU0xyG5nvN0nm6m8WKhNowUKFBRqROCpe8rzZSCaPA2iRoFq5dYObNwBWleOF41ANYf4qJge3I1ZPBzoSkIXMS/X6Ifk037KJExRiG5kTnIUqpZ5WDxEQ10LkJ6WpmtbRqnWu0AA1vOF29cXjiyVbiKWgXDfTSUd9L2x6yfhu+Bg=
+    file_glob: true
+    file: "$CRATE_NAME-$TRAVIS_TAG-$TARGET.*"
+    skip_cleanup: true
+    on:
+      tags: true
+      condition:
+      - "$TRAVIS_OS_NAME == linux"
+      - "$DEPLOY_ARCH"
 after_deploy:
 - cd /home/travis/build/lukaspustina/rs-collector; cargo publish --token ${CRATES_IO_TOKEN}
-env:
-  global:
-  - secure: QIuMZyJm4gxKGoXPcd8xb6DWOwHWXOnLRjddM1p/X1byatS2+37qMVJ3c4jsj8vCh2XC+0t1v+Vj61/+VdO4C7M6uPY7fcBMPwNdLzmkrJqyTtDGMSzM18FrJa1iQ3CPyD2JPbb568y3/lmKxmwBxiLBPX4d5GflrJF1leOSqs6Y8LdCYzQe8b+qyTJt5b2cscp6/5td7ObmIaxnbPjtAMdW99t09ljhz4OKtBCsQCM+VeiOT3QiNTO1rsM1yZbC8Qv5B84yhYiCO2QGM56SHBlQb8htpaVePu7RKeYU+SyE+EPR3xjjMcR0mlm6WkAetokNoK55gnb1Cd0KYUrhyAWMvJxvYSkFI5NMGUIgLm+grtKe/oyr5A9cM3SvAxAdKXjjl1CtLEYeoHotgH1pdsdSBtSx7n2W9ozMd2JjVGKu8+DlhW4lY2fgtXiKFqojSy9aislB4UDOE3yA/Audsq8C8pavUNwaS1H4I5bfJ98liv8ibgL5jl25OdbSzqc9crelIA3XWglj8Hc2jHdLx2QpHG4NdR0O/WX7/Ccw7wq1Z+GHCfdz86NUEOypnr+MTxPV7R1tsQBH8DAq7itx24EqNZkDoULmPiflDdc6o48Ns0GKBftdMSZ/YU+RGbVuybHieXGlnr/1gYzUMP30x2QIVvO19sTDv8BhXQOBV9M=
-  - secure: UPnfo6hJKDnd+XuqIvCfj374N3PuBxxG3rK5NoEOnzBWcDxrZwkBxVL+IqJtwDl/OCbZlD1eNDHqdPkSgO0ph+6+tpnCe1KMU2vwwQAG9yCmysmomI7cGcCg8oCvrg76ADlE/UVU0HXIWZgCmlt77KK6gVpagfEiOYUm/ScBJPmJUs0JTgG3RjGRaU//FIJGAwJInSIMpoPHC5XfKdgEEj9426XsbWQcoFwk+InRN6qlnr1hORA7KFPhBkjcnRn1ky/IFYXqjgNwZgGfYyK37idESPZVRd+u+Q8CVHSXrKQRwGGsIb+RZsoigt3AcaAR6ttVssGIlsvLS5VUI3mkjLnQodIoY7EXPqpRAfGTL2TprVcler7NeSVv0FxfxDaAeOGwDDjS5pZ/aLLMydY4eAlCVU5CApNjO7cYHBSGIkIw6I4woCeqNhMPd+rZ7i7AOJds4X26MoFPjNQzOmBkNDYV0X6SjCmMVS2ih2KufVv5QhuZxDg5uJPTSQXjGmQ4YTIdJ+i3Rm3mtJQsN/uXKdI/E/h5o93X/CmaQdpGSjNms7O9r3TMshP9b0YwmNJk4P40BgKaTi/AdTqTplu7+gpDLfrKW1w57gCBiQ8IvMd5fajTQDPrQcebqRaa0EMnGmZnyREsxdsZYGfzgWzfeTRSgtcEAtqvu1z88jiR0SE=

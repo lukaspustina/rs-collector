@@ -15,6 +15,9 @@ include = [
   "Cargo.toml",
 ]
 
+[badges]
+travis-ci = { repository = "lukaspustina/rs-collector", branch = "master" }
+
 [[bin]]
 name = "rs-collector"
 path = "src/main.rs"

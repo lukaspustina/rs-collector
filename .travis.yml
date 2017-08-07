@@ -2,40 +2,56 @@ dist: trusty
 language: rust
 services: docker
 sudo: required
+
 env:
   global:
-  - CRATE_NAME=rs-collector
-  - secure: S2QBfk4iIpztHX5L32YR/iP8Ar7drx8hwRCz7G+1aR2jUl4qyzE5JASSjEcuaIk4Wa5eU3Spm79PTmQqW4BhUZnEhZKqE214jXB7e5ay/X0YximqoB0TJjoXNhkqvI0u+EUiSPRdxQXKNWL6DVhyMvIObeooR1TsEA6Dak3ZIJwyfoTgTbz6YiqD+CsaX7ko+uUQfbHdsxbRpLozc5W75F2vgMKTZaQ4h289wT2NwTIk2t8UDlqojzwje26JbwyZzIWRQkfKaJyuY9HXeV9Mz4IVDnv13+ojroMzImEJqKoyl+Dfbll9L5ctYcxOXc+RnFHdNaeiiNQlYD5P3YZzQImwlLvw5pbudeWVRn2enozKHa6SGn9uBIjat5kTSBw+GZw01YCSX4wI+iGWGA5KLcdQMtqvsuQ5Q7eNgt7ui9Shc4s59GIzhVio6zhyb/PdIJGPiRc0BPZfNyfedd6rAS8D7dwE8FYDnlBxE/bpiyqdlgY+j2VWpW+LPtROuNklYrU5ALUGN1uYfN6tSLCxo5MIJMQasUkrVZHJ662cAAPRq9hRsYWIt8EfVQO0M7JsCSCSJqrU1H0zE7u5Cd7/Sxp2rMmwc3ASAo2kzsvcfwdMJC3/QzvDi1BJoXyPNTOiJudN81+JldGkW/qjDh17TCgCVCAu4wjHIqllvPS39eU=
+    - CRATE_NAME=rs-collector
+    - secure: S2QBfk4iIpztHX5L32YR/iP8Ar7drx8hwRCz7G+1aR2jUl4qyzE5JASSjEcuaIk4Wa5eU3Spm79PTmQqW4BhUZnEhZKqE214jXB7e5ay/X0YximqoB0TJjoXNhkqvI0u+EUiSPRdxQXKNWL6DVhyMvIObeooR1TsEA6Dak3ZIJwyfoTgTbz6YiqD+CsaX7ko+uUQfbHdsxbRpLozc5W75F2vgMKTZaQ4h289wT2NwTIk2t8UDlqojzwje26JbwyZzIWRQkfKaJyuY9HXeV9Mz4IVDnv13+ojroMzImEJqKoyl+Dfbll9L5ctYcxOXc+RnFHdNaeiiNQlYD5P3YZzQImwlLvw5pbudeWVRn2enozKHa6SGn9uBIjat5kTSBw+GZw01YCSX4wI+iGWGA5KLcdQMtqvsuQ5Q7eNgt7ui9Shc4s59GIzhVio6zhyb/PdIJGPiRc0BPZfNyfedd6rAS8D7dwE8FYDnlBxE/bpiyqdlgY+j2VWpW+LPtROuNklYrU5ALUGN1uYfN6tSLCxo5MIJMQasUkrVZHJ662cAAPRq9hRsYWIt8EfVQO0M7JsCSCSJqrU1H0zE7u5Cd7/Sxp2rMmwc3ASAo2kzsvcfwdMJC3/QzvDi1BJoXyPNTOiJudN81+JldGkW/qjDh17TCgCVCAu4wjHIqllvPS39eU=
+
 matrix:
   include:
-  - env: TARGET=x86_64-unknown-linux-gnu DEPLOY_ARCH=amd64
-  - env: TARGET=x86_64-unknown-linux-musl
-  - env: TARGET=x86_64-apple-darwin
-    os: osx
-  - env: TARGET=armv7-unknown-linux-gnueabihf DEPLOY_ARCH=armhf
-  - env: TARGET=x86_64-unknown-linux-gnu
-    rust: beta
-  - env: TARGET=x86_64-unknown-linux-gnu
-    rust: nightly
+    # Linux
+    - env: TARGET=x86_64-unknown-linux-gnu DEPLOY_ARCH=amd64
+    - env: TARGET=x86_64-unknown-linux-musl
+
+    # OSX
+    - env: TARGET=x86_64-apple-darwin
+      os: osx
+
+    # Raspi
+    - env: TARGET=armv7-unknown-linux-gnueabihf DEPLOY_ARCH=armhf
+
+    # Testing future Rust versions
+    - env: TARGET=x86_64-unknown-linux-gnu
+      rust: beta
+    - env: TARGET=x86_64-unknown-linux-gnu
+      rust: nightly
+
   allow_failures:
   - rust: beta
   - rust: nightly
+
 branches:
   only:
   - master
   - travis-ci
   - "/^v.*$/"
+
 before_install: set -e
+
 install:
-- sh .ci/install.sh
-- source ~/.cargo/env || true
+  - sh .ci/install.sh
+  - source ~/.cargo/env || true
+
 script:
-- bash .ci/script.sh
+  - bash .ci/script.sh
+
 after_script: set +e
+
 before_deploy:
-- sh .ci/before_deploy.sh
+  - sh .ci/before_deploy.sh
+
 deploy:
-  matrix:
   - provider: packagecloud
     username: lukaspustina
     token:
@@ -60,5 +76,7 @@ deploy:
       condition:
       - "$TRAVIS_OS_NAME == linux"
       - "$DEPLOY_ARCH"
+
 after_deploy:
-- cd /home/travis/build/lukaspustina/rs-collector; cargo publish --token ${CRATES_IO_TOKEN}
+  - cd /home/travis/build/lukaspustina/rs-collector; cargo publish --token ${CRATES_IO_TOKEN}
+

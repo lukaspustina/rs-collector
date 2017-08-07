@@ -131,7 +131,7 @@ This collector only collects statistics for specified JVM; cf. example configura
 
 ### Mongo
 
-The _Mongo_ collector collects MongoDB replicaset and cluster metrics. We use it to monitor cluster split brain and general degradation situation. There is a full list of all available metrics in [galera.rs](src/collectors/mongo.rs), function `metadata`.
+The _Mongo_ collector collects MongoDB replicaset and cluster metrics. We use it to monitor cluster split brain and general degradation situation. There is a full list of all available metrics in [mongo.rs](src/collectors/mongo.rs), function `metadata`.
 
 Especially the following two metrics are helpful:
 
@@ -156,7 +156,7 @@ alert mongo.replicaset.state.unexpected {
 
 ### Postfix
 
-The _Postfix_ collector collects metrics about Postfix' queues. This is helpful to monitor how the queues fill and empty over time as well as if the queues are emptied at all in order to alarm when mail delivery stalls. There is a full list of all available metrics in [galera.rs](src/collectors/postfix.rs), function `metadata`.
+The _Postfix_ collector collects metrics about Postfix' queues. This is helpful to monitor how the queues fill and empty over time as well as if the queues are emptied at all in order to alarm when mail delivery stalls. There is a full list of all available metrics in [postfix.rs](src/collectors/postfix.rs), function `metadata`.
 
 #### Example Alarms
 

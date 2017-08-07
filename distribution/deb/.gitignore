@@ -1,0 +1,4 @@
+.vagrant
+rs-collector/DEBIAN
+rs-collector/usr
+rs-collector*.deb

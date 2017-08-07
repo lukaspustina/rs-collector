@@ -1,0 +1,10 @@
+chown root:root /etc/logrotate.d/rs-collector
+chmod 644 /etc/logrotate.d/rs-collector
+
+chown root:root /usr/sbin/rs-collector
+chmod 755 /usr/sbin/rs-collector
+
+if which service >/dev/null 2>&1; then
+  service rs-collector restart
+fi
+

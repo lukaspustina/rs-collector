@@ -1,0 +1,11 @@
+/var/log/rs-collector.log {
+	rotate 7
+	daily
+	create
+	missingok
+	notifempty
+	compress
+	postrotate
+		invoke-rc.d rs-collector restart > /dev/null
+	endscript
+}

@@ -1,0 +1,9 @@
+Package: @@PACKAGE_NAME@@
+Version: @@VERSION@@
+Section: admin
+Priority: optional
+Architecture: @@ARCH@@
+Installed-Size: @@SIZE@@
+Maintainer: lukas.pustina@gmail.com
+Description: An scollector compatible telemetry collector written in Rust
+

@@ -10,11 +10,8 @@ extern crate chan_signal;
 extern crate log;
 extern crate env_logger;
 extern crate get_if_addrs;
-#[macro_use]
 extern crate itertools;
-#[macro_use]
 extern crate mongodb;
-#[macro_use]
 extern crate mysql;
 #[cfg(target_os = "linux")]
 extern crate procinfo;

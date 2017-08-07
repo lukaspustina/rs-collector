@@ -37,7 +37,7 @@ impl Collector for RsCollector {
     }
 
     fn collect(&self) -> Result<Vec<Sample>, Error> {
-        let mut samples = try!(collect_internal_metrics());
+        let samples = try!(collect_internal_metrics());
         debug!("{:#?}", samples);
 
         Ok(samples)

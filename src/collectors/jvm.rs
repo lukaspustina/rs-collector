@@ -261,15 +261,15 @@ struct IdentifiedJvm {
 }
 
 fn identify_jvms(jvm_configs: &Vec<JvmConfig>, jp: &JvmProcess) -> IdentifiedJvm {
-    // TODO: Use regex set for a single scan
-    // TODO: Use func combinators
     let mut name = None;
     for jvm_config in jvm_configs {
-        // TODO: Make this safe
-        let re = Regex::new(&jvm_config.Command).unwrap();
-        if re.is_match(&jp.class) || re.is_match(&jp.cmdline) {
-            name = Some(jvm_config.Name.clone());
-            break;
+        if let Ok(re) = Regex::new(&jvm_config.Command) {
+            if re.is_match(&jp.class) || re.is_match(&jp.cmdline) {
+                name = Some(jvm_config.Name.clone());
+                break;
+            } else {
+                warn!("Invalid regular express for '{:?}'", jvm_config);
+            }
         }
     }
     IdentifiedJvm {pid: jp.pid, name: name }
@@ -299,7 +299,7 @@ fn sample_gc_stats(jvm: &IdentifiedJvm) -> Result<Vec<GcStat>, Error> {
     for i in 0..values.len() {
         let name = names[i];
         let value = try!(values[i].parse::<f64>());
-        // TODO: Unwrap is safe, but only due to the filter in the main algorithm
+        // Unwrap is safe, but only due to the filter in the main algorithm
         let gcstat = GcStat{ jvm_name: jvm.name.as_ref().unwrap().clone(), name: name.to_string(), value: value };
         trace!("Successfully run gcstat for JVM Process '{:?}': '{:?}'", jvm, gcstat);
         gcstats.push(gcstat);

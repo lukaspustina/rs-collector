@@ -25,7 +25,8 @@ _rs-collector_ is a [Bosun](https://bosun.org) compatible collector for various 
 - [Configuration](#configuration)
 - [Installation](#installation)
   - [Ubuntu [x86_64 and Raspberry Pi]](#ubuntu-x86_64-and-raspberry-pi)
-  - [Binary](#binary)
+  - [Linux Binaries [x86_64 and Raspberry Pi]](#linux-binaries-x86_64-and-raspberry-pi)
+  - [macOS](#macos)
   - [Sources](#sources)
   - [Ansible](#ansible)
 - [Know Issues](#know-issues)
@@ -214,9 +215,17 @@ curl -s https://packagecloud.io/install/repositories/lukaspustina/opensource/scr
 sudo apt-get install rs-collector
 ```
 
-### Binaries [x86_64 and Raspberry Pi]
+### Linux Binaries [x86_64 and Raspberry Pi]
 
 There are binaries available at the GitHub [release page](https://github.com/lukaspustina/rs-collector/releases). The binaries get compiled on Ubuntu.
+
+### macOS
+
+Please use [Homebrew](https://brew.sh) to install _rs-collector_ on your system.
+
+```bash
+brew install lukaspustina/os/rs-collector
+```
 
 ### Sources
 

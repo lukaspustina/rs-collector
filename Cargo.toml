@@ -23,7 +23,7 @@ name = "rs-collector"
 path = "src/main.rs"
 
 [dependencies]
-bosun_emitter = "1.0.0"
+bosun_emitter = "1.1.0"
 bson = "0.3.1"
 chan = "0.1.18"
 chan-signal = "0.1.6"

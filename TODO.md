@@ -14,7 +14,7 @@
 - [x] Automate packaging for Ubuntu
   - [x] Ansible Role
   - [x] Update Readme: Link to package and Ansible role
-- [ ] Support TLS and basic auth for Bosun
+- [X] Support TLS and basic auth for Bosun
 - [ ] Add auth and transport encryption to Galera, Mongo collectors
 - [ ] Redo collectors as real state machine
 - [+] Failure Modes

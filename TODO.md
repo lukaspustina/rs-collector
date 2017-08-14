@@ -16,6 +16,9 @@
   - [x] Update Readme: Link to package and Ansible role
 - [X] Support TLS and basic auth for Bosun
 - [ ] Add auth and transport encryption to Galera, Mongo collectors
+- [ ] Clippy-fy
+- [ ] Release 0.1
+
 - [ ] Redo collectors as real state machine
 - [+] Failure Modes
   - [x] Reinitialize collector if collection fails.

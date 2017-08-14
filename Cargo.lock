@@ -1,6 +1,6 @@
 [root]
 name = "rs-collector"
-version = "0.0.9"
+version = "0.1.0"
 dependencies = [
  "bosun_emitter 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bson 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",

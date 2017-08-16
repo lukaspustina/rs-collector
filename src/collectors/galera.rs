@@ -1,11 +1,12 @@
 // See http://galeracluster.com/documentation-webpages/monitoringthecluster.html
 
-use mysql as my;
-
 use bosun::{Metadata, Rate, Sample};
 use collectors::*;
 use config::Config;
 use utils;
+
+use mysql as my;
+use std::path::PathBuf;
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]
@@ -15,6 +16,10 @@ pub struct GaleraConfig {
     pub Password: Option<String>,
     pub Socket: Option<String>,
     pub Host: Option<String>,
+    pub UseSsl: Option<bool>,
+    pub CaCert: Option<String>,
+    pub ClientCert: Option<String>,
+    pub ClientCertKey: Option<String>,
 }
 
 #[derive(Clone)]
@@ -24,24 +29,46 @@ pub struct Galera {
     password: Option<String>,
     socket: Option<String>,
     ip_or_hostname: Option<String>,
+    use_ssl: bool,
+    ca_cert: Option<PathBuf>,
+    client_cert: Option<PathBuf>,
+    client_cert_key: Option<PathBuf>,
     pool: Option<my::Pool>,
 }
 
 pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
     match config.Galera {
         Some(ref config) => {
-            // TODO: WTF?
             let id = format!("galera#{}@{}{}",
                              config.User.as_ref().unwrap_or(&"''".to_string()),
                              config.Socket.as_ref().unwrap_or(&"".to_string()),
-                             config.Host.as_ref().unwrap_or(&"".to_string()));
-            info!("Created instance of Galera collector: {}", id);
+                             config.Host.as_ref().unwrap_or(&"".to_string()),
+                            );
 
             let collector = Galera {
-                id: id, user: config.User.clone(), password: config.Password.clone(),
-                socket: config.Socket.clone(), ip_or_hostname: config.Host.clone(), pool: None,
+                id: id.clone(),
+                user: config.User.clone(),
+                password: config.Password.clone(),
+                socket: config.Socket.clone(),
+                ip_or_hostname: config.Host.clone(),
+                use_ssl: config.UseSsl.unwrap_or_else(|| false),
+                ca_cert: config.CaCert.as_ref().map(|s| s.into()),
+                client_cert: config.ClientCert.as_ref().map(|s| s.into()),
+                client_cert_key: config.ClientCertKey.as_ref().map(|s| s.into()),
+                pool: None,
             };
-            vec![Box::new(collector)]
+
+            // TODO: This should be handled by the parser, but that requires serde
+            if collector.use_ssl && collector.ca_cert.is_none() {
+                error!("Failed to create instance of Galera collector id='{}', because SSL is activated without CA cert", id);
+                Vec::new()
+            } else if collector.client_cert.is_some() && collector.client_cert_key.is_none() {
+                error!("Failed to create instance of Galera collector id='{}', because client cert is set without client key", id);
+                Vec::new()
+            } else {
+                info!("Created instance of Galera collector: {}", id);
+                vec![Box::new(collector)]
+            }
         }
         None => {
             Vec::new()
@@ -50,6 +77,7 @@ pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
 }
 
 
+#[cfg(target_os = "linux")]
 impl From<Galera> for my::Opts {
     fn from(config: Galera) -> Self {
         let mut optsbuilder: my::OptsBuilder = my::OptsBuilder::new();
@@ -59,9 +87,37 @@ impl From<Galera> for my::Opts {
         }
         optsbuilder
             .ip_or_hostname(config.ip_or_hostname)
-            .unix_addr(config.socket)
+            .socket(config.socket)
             .user(config.user)
             .pass(config.password);
+
+        if config.use_ssl {
+            let ssl_config = match (config.ca_cert, config.client_cert, config.client_cert_key) {
+                (Some(ca), Some(client), Some(key)) => Some((ca, Some((client, key)))),
+                (Some(ca), _, _) => Some((ca, None)),
+                _ => None,
+            };
+            optsbuilder.ssl_opts(ssl_config);
+        }
+
+        my::Opts::from(optsbuilder)
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+impl From<Galera> for my::Opts {
+    fn from(config: Galera) -> Self {
+        let mut optsbuilder: my::OptsBuilder = my::OptsBuilder::new();
+        // prefer_socket is set by default; but we make sure it is set anyway.
+        if config.socket.is_some() {
+            optsbuilder.prefer_socket(true);
+        }
+        optsbuilder
+            .ip_or_hostname(config.ip_or_hostname)
+            .socket(config.socket)
+            .user(config.user)
+            .pass(config.password);
+
         my::Opts::from(optsbuilder)
     }
 }
@@ -71,6 +127,9 @@ impl Collector for Galera {
         use std::error::Error;
 
         let galera = self.clone();
+        if galera.use_ssl {
+            info!("Using SSL for instance of Galera collector: {}", self.id);
+        }
         let pool = my::Pool::new(galera);
         match pool {
             Ok(pool) => {

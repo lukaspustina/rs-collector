@@ -15,10 +15,12 @@
   - [x] Ansible Role
   - [x] Update Readme: Link to package and Ansible role
 - [X] Support TLS and basic auth for Bosun
-- [ ] Add auth and transport encryption to Galera, Mongo collectors
+- [X] Add auth and transport encryption to Galera collector
+- [ ] Add auth and transport encryption to Mongo collector
+- [ ] lib version check -- reduce multiple versions of dependent crates
 - [ ] Clippy-fy
 - [ ] Release 0.1
-
+- [ ] Move to serde; cf. Galera collector
 - [ ] Redo collectors as real state machine
 - [+] Failure Modes
   - [x] Reinitialize collector if collection fails.

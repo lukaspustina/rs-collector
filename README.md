@@ -50,6 +50,8 @@ See below for details about the collectors.
 
 The _Galera_ collector collects metrics about the cluster status and cluster sync performance of a MySQL Galera cluster. We use it to watch for cluster split brain and general degradation situations. There is a full list of all available metrics in [galera.rs](src/collectors/galera.rs), function `metadata`.
 
+The Galera collector supports SSL transport encryption on Linux. See the example configuration for how to enable SSL.
+
 #### Example Alarms
 
 ```

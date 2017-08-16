@@ -21,22 +21,24 @@ travis-ci = { repository = "lukaspustina/rs-collector", branch = "master" }
 [[bin]]
 name = "rs-collector"
 path = "src/main.rs"
+doc = false
 
 [dependencies]
 bosun_emitter = "1.1.0"
 bson = "0.9"
-chan = "0.1.18"
-chan-signal = "0.1.6"
+chan = "0.1"
+chan-signal = "0.3"
 chrono = "0.4"
 clap = "2"
-env_logger = "0.3"
-get_if_addrs = "0.4.0"
-itertools = "0.5.2"
+env_logger = "0.4"
+get_if_addrs = "0.4"
+itertools = "0.6"
 log = "0.3"
 regex = "0.2"
 rustc-serialize = "0.3"
-time = "0.1.35"
-toml = "0.1"
+time = "0.1"
+# toml > 0.2 requires serde
+toml = "0.2"
 
 [dependencies.mongodb]
 version = "0.3"

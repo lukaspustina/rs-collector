@@ -24,20 +24,23 @@ path = "src/main.rs"
 
 [dependencies]
 bosun_emitter = "1.1.0"
-bson = "0.3.1"
+bson = "0.9"
 chan = "0.1.18"
 chan-signal = "0.1.6"
-chrono = "0.2"
+chrono = "0.4"
 clap = "2"
 env_logger = "0.3"
 get_if_addrs = "0.4.0"
 itertools = "0.5.2"
 log = "0.3"
-mongodb = "0.1.7"
 regex = "0.2"
 rustc-serialize = "0.3"
 time = "0.1.35"
 toml = "0.1"
+
+[dependencies.mongodb]
+version = "0.3"
+features = ["ssl"]
 
 [dependencies.mysql]
 version = "12.0"

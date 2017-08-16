@@ -10,7 +10,7 @@ use collectors::{Collector, Error, Id};
 use config::Config;
 
 use bson::{Bson, Document};
-use chrono::*;
+use chrono::prelude::*;
 use mongodb::{Client, CommandType, Error as MongodbError, ThreadedClient};
 use mongodb::db::{ThreadedDatabase};
 use std::error::Error as StdError;
@@ -185,8 +185,8 @@ fn calculate_oplog_lag(document: &Document) -> Result<(f64, f64, f64), Error> {
         return Err(Error::CollectionError(msg))
     };
 
-    let mut primary_date: Option<&DateTime<UTC>> = None;
-    let mut secondary_dates: Vec<&DateTime<UTC>> = Vec::new();
+    let mut primary_date: Option<&DateTime<Utc>> = None;
+    let mut secondary_dates: Vec<&DateTime<Utc>> = Vec::new();
     for m in members {
         let member = if let &Bson::Document(ref member) = m {
             member
@@ -224,7 +224,7 @@ fn calculate_oplog_lag(document: &Document) -> Result<(f64, f64, f64), Error> {
     }
 
     for d in secondary_dates.iter() {
-        let diff = (*primary_date.unwrap() - **d).num_milliseconds() as f64;
+        let diff = primary_date.unwrap().signed_duration_since((**d)).num_milliseconds() as f64;
         min = min.min(diff);
         max = max.max(diff);
         avg += diff;

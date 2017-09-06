@@ -131,7 +131,7 @@ impl CollectorRunner {
                     },
                     Some(CollectorRequest::Init) => {
                         // TODO: Add failure management exp backoff timer to wait before reconnecting.
-                        let exp_backoff = 10;
+                        let exp_backoff = 60;
                         debug!("CollectorRunner {} received 'Init' message. Waiting {} sec.", &self.id, exp_backoff);
                         thread::sleep(Duration::from_secs(exp_backoff));
                         let collector = self.collector.clone();

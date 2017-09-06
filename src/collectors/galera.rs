@@ -146,13 +146,16 @@ impl Collector for Galera {
     }
 
     fn collect(&self) -> Result<Vec<Sample>, Error> {
-        // TODO: make this safe -> if let / match
-        let wsrepstates: Vec<WsrepStatus> = try!(query_wsrep_status(self.pool.as_ref().unwrap()));
-        trace!("wsrepstates = {:#?}", wsrepstates);
-        let metric_data = wsrepstates.convert_to_metric();
-        debug!("metric_data = {:#?}", metric_data);
+        if let Some(ref pool) = self.pool {
+            let wsrepstates: Vec<WsrepStatus> = try!(query_wsrep_status(self.pool.as_ref().unwrap()));
+            trace!("wsrepstates = {:#?}", wsrepstates);
+            let metric_data = wsrepstates.convert_to_metric();
+            debug!("metric_data = {:#?}", metric_data);
 
-        Ok(metric_data)
+            Ok(metric_data)
+        } else {
+            Err(super::Error::CollectionError("DB pool is None.".to_string()))
+        }
     }
 
     fn shutdown(&mut self) {

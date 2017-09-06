@@ -141,9 +141,7 @@ impl CollectorRunner {
                                 info!("CollectorRunner {} successfully re-initialized collector.", &self.id);
                             },
                             Err(_) => {
-                                error!("CollectorRunner {} failed to re-initialize collector. Shutting collector down.", &self.id);
-                                collector.shutdown();
-                                break;
+                                error!("CollectorRunner {} failed to re-initialize collector.", &self.id);
                             }
                         }
                     },
@@ -244,23 +242,24 @@ fn create_controllers(
         // Initialization might be moved to collector threads?
         match c.init() {
             Ok(_) => {
-                let (to_runner_tx, from_controller_rx) = chan::async();
-                let id = c.id().clone();
-                let mut controller = CollectorController::new(id.clone(), to_runner_tx);
-                let runner = CollectorRunner::new(id.clone(),
-                                                  from_controller_rx,
-                                                  runners_to_main_tx.clone(),
-                                                  c);
-                let runner_thread = runner.spawn();
-
-                controller.runner_thread = Some(runner_thread);
-                controllers.insert(id, controller);
-            },
+                info!("Initialized collector {}", c.id());
+            }
             Err(err) => {
-                error!("Failed to initialize collector {}: {:?}", c.id(), err);
+                error!("Failed to initialize collector {}: {:?}. Adding anyway.", c.id(), err);
             }
         }
-    }
+
+        let (to_runner_tx, from_controller_rx) = chan::async();
+        let id = c.id().clone();
+        let mut controller = CollectorController::new(id.clone(), to_runner_tx);
+        let runner = CollectorRunner::new(id.clone(),
+                                          from_controller_rx,
+                                          runners_to_main_tx.clone(),
+                                          c);
+        let runner_thread = runner.spawn();
+
+        controller.runner_thread = Some(runner_thread);
+        controllers.insert(id, controller);}
 
     controllers
 }

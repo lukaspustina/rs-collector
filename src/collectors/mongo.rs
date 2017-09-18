@@ -11,7 +11,7 @@ use config::Config;
 
 use bson::{Bson, Document};
 use chrono::prelude::*;
-use mongodb::{Client, CommandType, Error as MongodbError, ThreadedClient};
+use mongodb::{Client, ClientOptions, CommandType, Error as MongodbError, ThreadedClient};
 use mongodb::db::{ThreadedDatabase};
 use std::error::Error as StdError;
 use std::f64;
@@ -21,10 +21,14 @@ use std::f64;
 #[allow(non_snake_case)]
 pub struct MongoConfig {
     pub Name: String,
-    pub User: Option<String>,
-    pub Password: Option<String>,
     pub Host: String,
     pub Port: u16,
+    pub User: Option<String>,
+    pub Password: Option<String>,
+    pub UseSsl: Option<bool>,
+    pub CaCert: Option<String>,
+    pub ClientCert: Option<String>,
+    pub ClientCertKey: Option<String>,
 }
 
 #[derive(Clone)]
@@ -33,25 +37,40 @@ pub struct Mongo {
     name: String,
     user: Option<String>,
     password: Option<String>,
+    use_ssl: bool,
+    ca_cert: Option<String>,
+    client_cert: Option<String>,
+    client_cert_key: Option<String>,
     ip_or_hostname: String,
     port: u16,
     client: Option<Client>,
 }
 
 pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
-    let mut names: Vec<Box<Collector + Send>> = Vec::new();
+    let mut collectors: Vec<Box<Collector + Send>> = Vec::new();
     for m in &config.Mongo {
         let id = format!("mongo#{}#{}@{}:{}",
                          m.Name, m.User.as_ref().unwrap_or(&"''".to_string()), m.Host, m.Port);
         info!("Created instance of Mongo collector: {}", id);
 
         let collector = Mongo {
-            id: id, name: m.Name.clone(), user: m.User.clone(), password: m.Password.clone(),
+            id: id.clone(), name: m.Name.clone(), user: m.User.clone(), password: m.Password.clone(),
+            use_ssl: m.UseSsl.unwrap_or_else(|| false),
+            ca_cert: m.CaCert.clone(), client_cert: m.ClientCert.clone(), client_cert_key: m.ClientCertKey.clone(),
             ip_or_hostname: m.Host.clone(), port: m.Port, client: None,
         };
-        names.push(Box::new(collector));
+
+        // TODO: This should be handled by the parser, but that requires serde
+        if collector.use_ssl && collector.ca_cert.is_none() {
+            error!("Failed to create instance of Mongo collector id='{}', because SSL is activated without CA cert", id);
+        } else if collector.client_cert.is_some() && collector.client_cert_key.is_none() {
+            error!("Failed to create instance of Mongo collector id='{}', because client cert is set without client key", id);
+        } else {
+            info!("Created instance of Galera collector: {}", id);
+            collectors.push(Box::new(collector));
+        }
     }
-    names
+    collectors
 }
 
 impl Collector for Mongo {
@@ -59,7 +78,16 @@ impl Collector for Mongo {
         use std::error::Error;
 
         // TODO: client seems to be _always_ valid, i.e, when connection is impossible
-        let result = Client::connect(&self.ip_or_hostname, self.port);
+        let options = match (self.ca_cert.as_ref(), self.client_cert.as_ref(), self.client_cert_key.as_ref()) {
+            (Some(ref ca_cert), Some(ref client_cert), Some(ref client_cert_key)) => {
+                ClientOptions::with_ssl(ca_cert, client_cert, client_cert_key, true)
+            },
+            (Some(ref ca_cert), None, None) => {
+                ClientOptions::with_unauthenticated_ssl(ca_cert,false)
+            },
+            _ => { ClientOptions::new() }
+        };
+        let result = Client::connect_with_options(&self.ip_or_hostname, self.port, options);
         match result {
             Ok(client) => {
                 self.client = Some(client);
@@ -109,7 +137,7 @@ impl Mongo {
     #[allow(non_snake_case)]
     fn rs_status(&self) -> Result<Vec<Sample>, Error> {
         let client = self.client.as_ref().unwrap();
-        let document = try!(query_rs_status(client));
+        let document = try!(query_rs_status(client, &self.user, &self.password));
 
         let replicaset: String = if let Some(&Bson::String(ref set)) = document.get("set") {
             trace!("set: {}", set);
@@ -160,8 +188,11 @@ impl Mongo {
     }
 }
 
-fn query_rs_status(client: &Client) -> Result<Document, Error> {
+fn query_rs_status(client: &Client, user: &Option<String>, password: &Option<String>) -> Result<Document, Error> {
     let db = client.db("admin");
+    if let (&Some(ref u), &Some(ref pw)) = (user, password) {
+        try!(db.auth(u, pw));
+    }
     let cmd = doc! { "replSetGetStatus" => 1 };
     let result = try!(db.command(cmd, CommandType::Suppressed, None));
     trace!("Document: {}", result);

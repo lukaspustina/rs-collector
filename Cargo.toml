@@ -25,14 +25,14 @@ doc = false
 
 [dependencies]
 bosun_emitter = "1.1.0"
-bson = "0.10"
+bson = "0.9"
 chan = "0.1"
 chan-signal = "0.3"
 chrono = "0.4"
 clap = "2"
 env_logger = "0.4"
-get_if_addrs = "0.5"
-itertools = "0.7"
+get_if_addrs = "0.4"
+itertools = "0.6"
 log = "0.3"
 regex = "0.2"
 rustc-serialize = "0.3"
@@ -41,7 +41,7 @@ time = "0.1"
 toml = "0.2"
 
 [dependencies.mongodb]
-version = "0.3.7"
+version = "0.3.5"
 features = ["ssl"]
 
 [dependencies.mysql]
@@ -53,5 +53,5 @@ features = ["ssl"]
 procinfo = "0.4"
 
 [dev-dependencies]
-mktemp = "0.3"
+mktemp = "0.1.2"
 

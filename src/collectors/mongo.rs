@@ -43,7 +43,6 @@ pub struct Mongo {
     client_cert_key: Option<String>,
     ip_or_hostname: String,
     port: u16,
-    client: Option<Client>,
 }
 
 pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
@@ -57,7 +56,7 @@ pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
             id: id.clone(), name: m.Name.clone(), user: m.User.clone(), password: m.Password.clone(),
             use_ssl: m.UseSsl.unwrap_or_else(|| false),
             ca_cert: m.CaCert.clone(), client_cert: m.ClientCert.clone(), client_cert_key: m.ClientCertKey.clone(),
-            ip_or_hostname: m.Host.clone(), port: m.Port, client: None,
+            ip_or_hostname: m.Host.clone(), port: m.Port,
         };
 
         // TODO: This should be handled by the parser, but that requires serde
@@ -75,26 +74,7 @@ pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
 
 impl Collector for Mongo {
     fn init(&mut self) -> Result<(), Box<Error>> {
-        use std::error::Error;
-
-        // TODO: client seems to be _always_ valid, i.e, when connection is impossible
-        let options = match (self.ca_cert.as_ref(), self.client_cert.as_ref(), self.client_cert_key.as_ref()) {
-            (Some(ref ca_cert), Some(ref client_cert), Some(ref client_cert_key)) => {
-                ClientOptions::with_ssl(ca_cert, client_cert, client_cert_key, true)
-            },
-            (Some(ref ca_cert), None, None) => {
-                ClientOptions::with_unauthenticated_ssl(ca_cert,false)
-            },
-            _ => { ClientOptions::new() }
-        };
-        let result = Client::connect_with_options(&self.ip_or_hostname, self.port, options);
-        match result {
-            Ok(client) => {
-                self.client = Some(client);
-                Ok(())
-            },
-            Err(err) => Err(Box::new(super::Error::InitError(err.description().to_string())))
-        }
+        Ok(())
     }
 
     fn id(&self) -> &Id {
@@ -116,7 +96,6 @@ impl Collector for Mongo {
     }
 
     fn shutdown(&mut self) {
-        self.client = None;
     }
 
     fn metadata(&self) -> Vec<Metadata> {
@@ -133,11 +112,36 @@ impl Collector for Mongo {
     }
 }
 
+
 impl Mongo {
+    fn create_client(&self) -> Result<Client, Error> {
+        // Client is lazily created -- cf. https://github.com/mongodb-labs/mongo-rust-driver-prototype/issues/243#issuecomment-345914142
+        let options = match (self.ca_cert.as_ref(), self.client_cert.as_ref(), self.client_cert_key.as_ref()) {
+            (Some(ref ca_cert), Some(ref client_cert), Some(ref client_cert_key)) => {
+                ClientOptions::with_ssl(ca_cert, client_cert, client_cert_key, true)
+            },
+            (Some(ref ca_cert), None, None) => {
+                ClientOptions::with_unauthenticated_ssl(ca_cert, false)
+            },
+            _ => { ClientOptions::new() }
+        };
+        let result = Client::connect_with_options(&self.ip_or_hostname, self.port, options)
+            .map_err(move |err|
+                super::Error::InitError(err.description().to_string())
+            );
+
+        result
+    }
+
     #[allow(non_snake_case)]
     fn rs_status(&self) -> Result<Vec<Sample>, Error> {
-        let client = self.client.as_ref().unwrap();
-        let document = try!(query_rs_status(client, &self.user, &self.password));
+        // We're re-creating a client for every collection, because the current mongo driver
+        // has a buggy connection pool handling which may exhaust available file descriptors
+        // of production Mongo DB server.
+        // cf. https://github.com/mongodb-labs/mongo-rust-driver-prototype/issues/213 and
+        // https://github.com/mongodb-labs/mongo-rust-driver-prototype/issues/191
+        let client = try!(self.create_client());
+        let document = try!(query_rs_status(&client, &self.user, &self.password));
 
         let replicaset: String = if let Some(&Bson::String(ref set)) = document.get("set") {
             trace!("set: {}", set);

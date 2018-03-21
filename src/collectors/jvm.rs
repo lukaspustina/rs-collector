@@ -268,7 +268,7 @@ fn identify_jvms(jvm_configs: &Vec<JvmConfig>, jp: &JvmProcess) -> IdentifiedJvm
                 name = Some(jvm_config.Name.clone());
                 break;
             } else {
-                warn!("Invalid regular express for '{:?}'", jvm_config);
+                debug!("Regular expression '{:?}' did not match JVM process '{:?}'", jvm_config, jp);
             }
         }
     }

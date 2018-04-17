@@ -44,7 +44,7 @@ impl Collector for Jvm {
             return Err(Box::new(err))
         };
         let result = Command::new("/usr/bin/jstat").arg("-help").output();
-        if let Err(err) = handle_command_output("jps", result) {
+        if let Err(err) = handle_command_output("jstat", result) {
             return Err(Box::new(err))
         };
 

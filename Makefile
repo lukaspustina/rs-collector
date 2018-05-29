@@ -12,7 +12,7 @@ build:
 test:
 	cargo test
 
-release: release-bump all docs
+release: release-bump all
 	git commit -am "Bump to version $$(cargo read-manifest | jq .version)"
 	git tag v$$(cargo read-manifest | jq -r .version)
 

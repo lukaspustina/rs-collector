@@ -196,11 +196,17 @@ impl Mongo {
                     Sample::new_with_tags("mongo.connections.available", v, tags.clone())
                 );
             }
-            if let Some(&Bson::I64(v)) = cons.get("totalCreated") {
-                samples.push(
-                    // TODO: This conversation from i64 to f32 may fail
-                    Sample::new_with_tags("mongo.connections.totalCreated", v as f32, tags.clone())
-                );
+            match cons.get("totalCreated") {
+                Some(&Bson::I32(v)) =>
+                    samples.push(
+                        Sample::new_with_tags("mongo.connections.totalCreated", v, tags.clone())
+                    ),
+                Some(&Bson::I64(v)) =>
+                    samples.push(
+                        // TODO: The conversion from i64 to f32 may fail
+                        Sample::new_with_tags("mongo.connections.totalCreated", v as f32, tags.clone())
+                    ),
+                _ => {},
             }
         }
         if let Some(&Bson::Document(ref cons)) = document.get("opcounters") {

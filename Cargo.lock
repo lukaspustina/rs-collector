@@ -593,7 +593,7 @@ dependencies = [
 
 [[package]]
 name = "mysql"
-version = "13.0.0"
+version = "13.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bit-vec 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -602,7 +602,7 @@ dependencies = [
  "flate2 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "fnv 1.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)",
- "mysql_common 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mysql_common 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "named_pipe 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "net2 0.2.31 (registry+https://github.com/rust-lang/crates.io-index)",
  "nix 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -619,7 +619,7 @@ dependencies = [
 
 [[package]]
 name = "mysql_common"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "atoi 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -880,7 +880,7 @@ dependencies = [
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "mktemp 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "mongodb 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "mysql 13.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mysql 13.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "procinfo 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1419,8 +1419,8 @@ dependencies = [
 "checksum miniz-sys 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)" = "609ce024854aeb19a0ef7567d348aaa5a746b32fb72e336df7fcc16869d7e2b4"
 "checksum mktemp 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7333d33b5d44f26351d129c11a3e3bad35d2aff3f247ef23dc7ad38ac61e8ae9"
 "checksum mongodb 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)" = "b2bbf08821a347a1acb3c1348489f0b992c171ee880042a8655661303bf91f9a"
-"checksum mysql 13.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "395708bd4711b8d1e4b0fbe87d66b6c81d79c3942c17e94a7b87b3811324429b"
-"checksum mysql_common 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f0b9783856f97346f98896321602801af87d948e34375162f74d0b9bff42b264"
+"checksum mysql 13.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8c7b610a4f90f9efd89c4aa50428f16c0b8dd13c825021465b2e831dda37f03b"
+"checksum mysql_common 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "daf34444196cb8407ca0eae2c72542008ce7b702c903a11911e41a8ea4a595cb"
 "checksum named_pipe 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8ed10a5ac4f5f7e5d75552b12c1d5d542debca81e573279dd1e4c19fde6efa6d"
 "checksum native-tls 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "04b781c9134a954c84f0594b9ab3f5606abc516030388e8511887ef4c204a1e5"
 "checksum net2 0.2.31 (registry+https://github.com/rust-lang/crates.io-index)" = "3a80f842784ef6c9a958b68b7516bc7e35883c614004dd94959a4dca1b716c09"

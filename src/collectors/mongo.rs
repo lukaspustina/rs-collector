@@ -104,6 +104,13 @@ impl Collector for Mongo {
     fn collect(&self) -> Result<Vec<Sample>, Error> {
         let mut metric_data = Vec::new();
 
+        let mut server_status = try!(self.server_status()).into_iter()
+            .map(|mut s| {
+                s.tags.insert("name".to_string(), self.name.clone());
+                s
+            });
+        metric_data.extend(&mut server_status);
+
         let mut rs_status = try!(self.rs_status()).into_iter()
             .map(|mut s| {
                 s.tags.insert("name".to_string(), self.name.clone());
@@ -121,6 +128,15 @@ impl Collector for Mongo {
 
     fn metadata(&self) -> Vec<Metadata> {
         vec![
+            Metadata::new( "mongo.connections.current", Rate::Gauge, "", "The number of incoming connections from clients to the database server . This number includes the current shell session. Consider the value of connections.available to add more context to this datum. The value will include all incoming connections including any shell connections or connections from other servers, such as replica set members or mongos instances." ),
+            Metadata::new( "mongo.connections.available", Rate::Gauge, "", "The number of unused incoming connections available. Consider this value in combination with the value of connections.current to understand the connection load on the database, and the UNIX ulimit Settings document for more information about system thresholds on available connections." ),
+            Metadata::new( "mongo.connections.totalCreated", Rate::Counter, "", "Count of all incoming connections created to the server. This number includes connections that have since closed." ),
+            Metadata::new( "mongo.opcounters.insert", Rate::Gauge, "", "The total number of insert operations received since the mongod instance last started." ),
+            Metadata::new( "mongo.opcounters.query", Rate::Gauge, "", "The total number of queries received since the mongod instance last started." ),
+            Metadata::new( "mongo.opcounters.update", Rate::Gauge, "", "The total number of update operations received since the mongod instance last started." ),
+            Metadata::new( "mongo.opcounters.delete", Rate::Gauge, "", "The total number of delete operations since the mongod instance last started." ),
+            Metadata::new( "mongo.opcounters.getmore", Rate::Gauge, "", "The total number of “getmore” operations since the mongod instance last started. This counter can be high even if the query count is low. Secondary nodes send getMore operations as part of the replication process." ),
+            Metadata::new( "mongo.opcounters.command", Rate::Gauge, "", "The total number of commands issued to the database since the mongod instance last started. opcounters.command counts all commands except the write commands: insert, update, and delete." ),
             Metadata::new( "mongo.replicasets.members.mystate", Rate::Gauge, "",
                 "Show the local replica set state: 0 = startup, 1 = primary, 2 = secondary, 3 = recovering, 5 = startup2, 6 = unknown, 7 = arbiter, 8 = down, 9 = rollback, 10 = removed" ),
             Metadata::new( "mongo.replicasets.oplog_lag.min", Rate::Gauge, "ms",
@@ -134,6 +150,95 @@ impl Collector for Mongo {
 }
 
 impl Mongo {
+    fn server_status(&self) -> Result<Vec<Sample>, Error> {
+        let client = self.client.as_ref().unwrap();
+        let document = try!(query_server_status(client, &self.user, &self.password));
+
+        /*
+         * "version" : <string> => Tag
+         * "process" : <"mongod"|"mongos">, => Tag
+         * "connections" : {
+                "current" : <num>,
+                "available" : <num>,
+                "totalCreated" : NumberLong(<num>)
+                },
+         * "opcounters" : {
+                "insert" : <num>,
+                "query" : <num>,
+                "update" : <num>,
+                "delete" : <num>,
+                "getmore" : <num>,
+                "command" : <num>
+                },
+         */
+
+        let mut tags = Tags::new();
+        let key = "version";
+        if let Some(&Bson::String(ref s)) = document.get(key) {
+            trace!("{}: {}", key, s);
+            tags.insert(key.to_string(), s.to_string());
+        }
+        let key = "process";
+        if let Some(&Bson::String(ref s)) = document.get(key) {
+            trace!("{}: {}", key, s);
+            tags.insert(key.to_string(), s.to_string());
+        }
+
+        let mut samples = Vec::new();
+        if let Some(&Bson::Document(ref cons)) = document.get("connections") {
+            if let Some(&Bson::I32(v)) = cons.get("current") {
+                samples.push(
+                    Sample::new_with_tags("mongo.connections.current", v, tags.clone())
+                );
+            }
+            if let Some(&Bson::I32(v)) = cons.get("available") {
+                samples.push(
+                    Sample::new_with_tags("mongo.connections.available", v, tags.clone())
+                );
+            }
+            if let Some(&Bson::I64(v)) = cons.get("totalCreated") {
+                samples.push(
+                    // TODO: This conversation from i64 to f32 may fail
+                    Sample::new_with_tags("mongo.connections.totalCreated", v as f32, tags.clone())
+                );
+            }
+        }
+        if let Some(&Bson::Document(ref cons)) = document.get("opcounters") {
+            if let Some(&Bson::I32(v)) = cons.get("insert") {
+                samples.push(
+                    Sample::new_with_tags("mongo.opcounters.insert", v, tags.clone())
+                );
+            }
+            if let Some(&Bson::I32(v)) = cons.get("query") {
+                samples.push(
+                    Sample::new_with_tags("mongo.opcounters.query", v, tags.clone())
+                );
+            }
+            if let Some(&Bson::I32(v)) = cons.get("update") {
+                samples.push(
+                    Sample::new_with_tags("mongo.opcounters.update", v, tags.clone())
+                );
+            }
+            if let Some(&Bson::I32(v)) = cons.get("delete") {
+                samples.push(
+                    Sample::new_with_tags("mongo.opcounters.delete", v, tags.clone())
+                );
+            }
+            if let Some(&Bson::I32(v)) = cons.get("getmore") {
+                samples.push(
+                    Sample::new_with_tags("mongo.opcounters.getmore", v, tags.clone())
+                );
+            }
+            if let Some(&Bson::I32(v)) = cons.get("command") {
+                samples.push(
+                    Sample::new_with_tags("mongo.opcounters.command", v, tags.clone())
+                );
+            }
+        }
+
+        Ok(samples)
+    }
+
     #[allow(non_snake_case)]
     fn rs_status(&self) -> Result<Vec<Sample>, Error> {
         let client = self.client.as_ref().unwrap();
@@ -191,6 +296,18 @@ impl Mongo {
 
         Ok(samples)
     }
+}
+
+fn query_server_status(client: &Client, user: &Option<String>, password: &Option<String>) -> Result<Document, Error> {
+    let db = client.db("admin");
+    if let (&Some(ref u), &Some(ref pw)) = (user, password) {
+        try!(db.auth(u, pw));
+    }
+    let cmd = doc! { "serverStatus" => 1 };
+    let result = try!(db.command(cmd, CommandType::Suppressed, None));
+    trace!("Document: {}", result);
+
+    Ok(result)
 }
 
 fn query_rs_status(client: &Client, user: &Option<String>, password: &Option<String>) -> Result<Document, Error> {

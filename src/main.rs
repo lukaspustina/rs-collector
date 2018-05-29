@@ -24,10 +24,6 @@ fn main() {
 
     let app = App::new("rs-collector")
         .version(VERSION)
-        .after_help("Two modes are supported, i.e., sending a datum with meta data or \
-                               sending only meta data. The modes are controlled whether a value \
-                               `--value` is passed or not. Please mind that in both cases the \
-                               meta data is required.")
         .arg(Arg::with_name("configfile")
             .short("c")
             .long("config")

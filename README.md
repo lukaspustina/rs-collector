@@ -134,9 +134,21 @@ This collector only collects statistics for specified JVMs; cf. example configur
 
 ### Mongo
 
-The _Mongo_ collector collects MongoDB replicaset and cluster metrics. We use it to check for cluster split brain and general degradation situations. There is a full list of all available metrics in [mongo.rs](src/collectors/mongo.rs), function `metadata`.
+The _Mongo_ collector collects MongoDB connection, op counter, replicaset and cluster metrics. We use it to check for cluster split brain and general degradation situations. There is a full list of all available metrics in [mongo.rs](src/collectors/mongo.rs), function `metadata`.
 
-Especially the following two metrics are helpful:
+For connection and op statistics, the following metrics are helpful:
+
+* `mongo.connections.current` collects the number of incoming connections from clients to the database server . This number includes the current shell session. Consider the value of connections.available to add more context to this datum. The value will include all incoming connections including any shell connections or connections from other servers, such as replica set members or mongos instances.
+* `mongo.connections.available` collects the number of unused incoming connections available. Consider this value in combination with the value of connections.current to understand the connection load on the database, and the UNIX ulimit Settings document for more information about system thresholds on available connections.
+* `mongo.connections.totalCreated` counts of all incoming connections created to the server. This number includes connections that have since closed.
+* `mongo.opcounters.insert` collects the total number of insert operations received since the mongod instance last started.
+* `mongo.opcounters.query` collects the total number of queries received since the mongod instance last started.
+* `mongo.opcounters.update` collects the total number of update operations received since the mongod instance last started.
+* `mongo.opcounters.delete` collects the total number of delete operations since the mongod instance last started.
+* `mongo.opcounters.getmore` collects the total number of “getmore” operations since the mongod instance last started. This counter can be high even if the query count is low. Secondary nodes send getMore operations as part of the replication process.
+* `mongo.opcounters.command` collects the total number of commands issued to the database since the mongod instance last started. `mongo.opcounters.command` counts all commands except the write commands: insert, update, and delete.
+
+For replicaset and cluster monitoring, the following two metrics are helpful:
 
 * `mongo.replicasets.members.mystate` collects the "myState" variable from each replica set member. This allows to compute if that particular replica set is in a sane state.
 * `mongo.replicasets.oplog_lag.[min,avg,max]` collects the min, avg, and max oplog replication lag between a replica set's primary and the corresponding secondaries. These values are measured only on the currently active primary.

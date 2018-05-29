@@ -139,6 +139,11 @@ impl Mongo {
         let client = self.client.as_ref().unwrap();
         let document = try!(query_rs_status(client, &self.user, &self.password));
 
+        if document.is_empty() {
+            debug!("Received empty document, so no values to report");
+            return Ok(Vec::new());
+        }
+
         let replicaset: String = if let Some(&Bson::String(ref set)) = document.get("set") {
             trace!("set: {}", set);
             set.to_string()
@@ -194,7 +199,14 @@ fn query_rs_status(client: &Client, user: &Option<String>, password: &Option<Str
         try!(db.auth(u, pw));
     }
     let cmd = doc! { "replSetGetStatus" => 1 };
-    let result = try!(db.command(cmd, CommandType::Suppressed, None));
+    let result = match db.command(cmd, CommandType::Suppressed, None) {
+        Ok(res) => res,
+        Err(MongodbError::OperationError(msg)) => {
+            debug!("Mongo Operation Error because '{}'. Swalling this error", msg);
+            doc! {}
+        }
+        Err(e) => return Err(e.into())
+    };
     trace!("Document: {}", result);
 
     Ok(result)

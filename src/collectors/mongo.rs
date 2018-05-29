@@ -322,17 +322,27 @@ fn query_rs_status(client: &Client, user: &Option<String>, password: &Option<Str
         try!(db.auth(u, pw));
     }
     let cmd = doc! { "replSetGetStatus" => 1 };
-    let result = match db.command(cmd, CommandType::Suppressed, None) {
+    let doc = match db.command(cmd, CommandType::Suppressed, None) {
         Ok(res) => res,
+        // This happens when the replSetGetStatus is unsuccessful, e.g., replication is not enabled
         Err(MongodbError::OperationError(msg)) => {
             debug!("Mongo Operation Error because '{}'. Swalling this error", msg);
-            doc! {}
+            return Ok(doc!{})
         }
-        Err(e) => return Err(e.into())
+        Err(e) => {
+            debug!("Mongo Error: {:#?}", &e);
+            return Err(e.into())
+        }
     };
-    trace!("Document: {}", result);
+    trace!("Document: {}", doc);
 
-    Ok(result)
+    trace!("Ok value = {:#?}", doc.get("ok"));
+    match doc.get("ok") {
+        Some(&Bson::FloatingPoint(v)) if v == 1.0 => Ok(doc),
+        // This happens when the replSetGetStatus call is not supported, e.g., on mongos
+        Some(&Bson::FloatingPoint(v)) => Ok(doc!{}),
+        _ => Err(Error::CollectionError(format!("replSetGetStatus: unexpected result document '{}'", doc)))
+    }
 }
 
 impl From<MongodbError> for Error {

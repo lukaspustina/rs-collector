@@ -46,6 +46,7 @@ pub trait Collector {
     fn metadata(&self) -> Vec<Metadata>;
     fn collect(&self) -> Result<Vec<Sample>, Error>;
     fn shutdown(&mut self);
+    fn get_tick_interval(&self) -> i32 { 1 }
 }
 
 pub fn create_collectors(config: &Config) -> Vec<Box<Collector + Send>> {

@@ -102,6 +102,8 @@ struct CollectorRunner {
     runner_rx: Receiver<CollectorRequest>,
     controller_tx: Sender<Msg<CollectorResponse>>,
     collector: Arc<Mutex<Box<Collector + Send>>>,
+    tick_counter: i32,
+    tick_interval: i32,
 }
 
 impl CollectorRunner {
@@ -110,11 +112,16 @@ impl CollectorRunner {
            controller_tx: Sender<Msg<CollectorResponse>>,
            collector: Box<Collector + Send>)
            -> CollectorRunner {
+
+        let tick_interval = get_tick_interval(&collector);
+
         CollectorRunner {
             id: id,
             runner_rx: runner_rx,
             controller_tx: controller_tx,
             collector: Arc::new(Mutex::new(collector)),
+            tick_counter: 0, // Make sure, first tick initiates a sample
+            tick_interval,
         }
     }
 
@@ -150,8 +157,14 @@ impl CollectorRunner {
                         self.collect_metadata();
                     },
                     Some(CollectorRequest::Sample) => {
-                        debug!("CollectorRunner {} received 'Sample' message.", &self.id);
-                        self.collect_sample();
+                        if self.tick_counter % self.tick_interval == 0 {
+                            debug!("CollectorRunner {} received 'Sample' message. Sampling.", &self.id);
+                            self.collect_sample();
+                            self.tick_counter = 1;
+                        } else {
+                            debug!("CollectorRunner {} received 'Sample' message. Skipping.", &self.id);
+                            self.tick_counter = self.tick_counter + 1;
+                        }
                     },
                     Some(CollectorRequest::Shutdown) => {
                         debug!("CollectorRunner {} received 'Shutdown' message.", &self.id);
@@ -229,6 +242,10 @@ impl CollectorRunner {
             }
         }
     }
+}
+
+fn get_tick_interval(collector: &Box<Collector + Send>) -> i32 {
+    collector.get_tick_interval()
 }
 
 fn create_controllers(

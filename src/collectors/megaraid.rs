@@ -445,9 +445,17 @@ fn pdinfo_to_samples(_: &HashMap<String, Metadata>, pdinfo: PdInfo) -> Vec<Sampl
     let mut samples = Vec::new();
 
     pdinfo.media_errors
-        .map(|x| samples.push(Sample::new_with_tags("mediaerrors", x, tags)));
-//    pdinfo.other_errors
-//        .map(|x| samples.push(Sample::new_with_tags("othererrors", x, tags)));
+        .map(|x| samples.push(Sample::new_with_tags("mediaerrors", x, tags.clone())));
+    pdinfo.other_errors
+        .map(|x| samples.push(Sample::new_with_tags("othererrors", x, tags.clone())));
+    pdinfo.predictive_failure_errors
+        .map(|x| samples.push(Sample::new_with_tags("predfailerrors", x, tags.clone())));
+    pdinfo.smart_flag // todo bool nach 0 / 1
+        .map(|x| samples.push(Sample::new_with_tags("smartflag", if x { 1 } else { 0 }, tags.clone())));
+    pdinfo.firmware_state
+        .map(|x| samples.push(Sample::new_with_tags("firmwarestate", x, tags.clone())));
+    pdinfo.last_predictive_failure_event_seqno
+        .map(|x| samples.push(Sample::new_with_tags("predfaileventno", x, tags.clone())));
 
     samples
 }

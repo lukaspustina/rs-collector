@@ -1,7 +1,9 @@
 use bosun::{Metadata, Rate, Sample, Tags};
 use collectors::*;
 use config::Config;
-
+use is_executable::IsExecutable;
+use std::fs;
+use std::path::Path;
 use regex::Regex;
 use std::collections::HashMap;
 use std::process::{Command, Output};
@@ -9,23 +11,37 @@ use std::io::Result as IoResult;
 use itertools::Itertools;
 
 static METRIC_NAME_HWDISK: &'static str = "hw.disk";
-
+static MEGA_DEFAULT_BINARY: &'static str = "/opt/MegaRAID/MegaCli/MegaCli64";
+static MEGA_PARAM_LDPDINFO: &'static str = "-LdPdInfo";
+static MEGA_PARAM_ALL_ADAPTERS: &'static str = "ALL";
 
 pub struct Megaraid {
     id: Id,
+    tick_interval: i32,
+    megacli_command: String,
+    adapter: String,
 }
 
 #[derive(Debug)]
 #[derive(Clone)]
 #[derive(RustcDecodable)]
 #[allow(non_snake_case)]
-pub struct MegaraidConfig {}
+pub struct MegaraidConfig {
+    tick_interval: Option<i32>,
+    megacli_command: Option<String>,
+    adapter: Option<i32>,
+}
 
 pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
     if let Some(ref cfg) = config.Megaraid {
         info!("Created instance of Megaraid collector");
         let id = format!("megaraid#{}", "0");
-        let collector = Megaraid { id: id };
+        let collector = Megaraid {
+            id: id.clone(),
+            tick_interval: if let Some(ti) = cfg.tick_interval { ti } else { 1 },
+            megacli_command: if let Some(ref cmd) = cfg.megacli_command { cmd.clone() } else { MEGA_DEFAULT_BINARY.to_string() },
+            adapter: if let Some(adp) = cfg.adapter { adp.to_string() } else { MEGA_PARAM_ALL_ADAPTERS.to_string() },
+        };
         vec![Box::new(collector)]
     } else {
         Vec::new()
@@ -34,11 +50,13 @@ pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
 
 impl Collector for Megaraid {
     fn init(&mut self) -> Result<(), Box<Error>> {
-        // MegaCli64 prüfen
-        let result = Command::new("/bin/cat").arg("/etc/passwd").output();
-        if let Err(err) = handle_command_output("MegaCli64", result) {
-            return Err(Box::new(err));
-        };
+        let path = Path::new(&self.megacli_command);
+        if !path.is_file() {
+            return Err(Box::new(super::Error::InitError("Configured MegaCli command not found".to_string())));
+        }
+        if !path.is_executable() {
+            return Err(Box::new(super::Error::InitError("Configured MegaCli command is not executable".to_string())));
+        }
 
         Ok(())
     }
@@ -76,7 +94,7 @@ impl Collector for Megaraid {
 
     #[allow(unstable_name_collision)]
     fn collect(&self) -> Result<Vec<Sample>, Error> {
-        let pdinfos = try!(get_ldpdinfo());
+        let pdinfos = get_ldpdinfo(self.megacli_command.clone(), self.adapter.clone())?;
 
         let results: Vec<Vec<Sample>> =
             pdinfos.into_iter()
@@ -90,33 +108,24 @@ impl Collector for Megaraid {
     }
 
     fn shutdown(&mut self) {}
+
     fn get_tick_interval(&self) -> i32 {
-        8 // no need to ask all disks every 15 seconds;
+        self.tick_interval
     }
 }
 
 
-
-fn handle_command_output(command: &str, result: IoResult<Output>) -> Result<Output, Error> {
-    match result {
-        Ok(output) => {
-            if output.status.success() {
-                debug!("Successfully found and run {}.", command);
-                Ok(output)
-            } else {
-                let exit_code = output.status.code().map_or("<received signal>".to_string(), |i| format!("{}", i));
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                let msg = format!("Running {} returned exit code {}: out '{}', err '{}'.", command, exit_code, stdout, stderr);
-                debug!("{}", msg);
-                Err(Error::InitError(msg))
-            }
-        }
-        Err(err) => {
-            let msg = format!("Failed to run {}, because '{}'.", command, err.description());
-            debug!("{}", msg);
-            Err(Error::InitError(msg))
-        }
+fn handle_command_output(command: &String, output: Output) -> Result<Output, Error> {
+    if output.status.success() {
+        debug!("Successfully found and run {}.", command);
+        Ok(output)
+    } else {
+        let exit_code = output.status.code().map_or("<received signal>".to_string(), |i| format!("{}", i));
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let msg = format!("Running {} returned exit code {}: out '{}', err '{}'.", command, exit_code, stdout, stderr);
+        debug!("{}", msg);
+        Err(Error::CollectionError(msg))
     }
 }
 
@@ -296,15 +305,16 @@ fn parse_firmware_state(raw_firmware_state: &str) -> Option<u8> {
     }
 }
 
-fn get_ldpdinfo() -> Result<Vec<PdInfo>, Error> {
-    let result = execute_megacli_pdldinfo();
-    let output = try!(handle_command_output("MegaCli64", result));
+fn get_ldpdinfo(cmd: String, adapter: String) -> Result<Vec<PdInfo>, Error> {
+    let result = execute_megacli_pdldinfo(&cmd, &adapter)
+        .map_err(|e| Error::CollectionError(e.description().to_string()))?;
+    let output = handle_command_output(&cmd, result)?;
     let stdout = String::from_utf8_lossy(&output.stdout);
     let lines: Vec<&str> = stdout.lines().collect();
 
     if lines.is_empty() {
-        let msg = format!("Failed to parse MegaCli64 output");
-        trace!("Failed to parse MegaCli64 output for lines: '{}'", stdout);
+        let msg = format!("Failed to parse MegaCli output");
+        trace!("Failed to parse MegaCli output for lines: '{}'", stdout);
         return Err(Error::CollectionError(msg));
     }
 
@@ -431,9 +441,9 @@ fn get_ldpdinfo() -> Result<Vec<PdInfo>, Error> {
     Ok(pdinfos)
 }
 
-fn execute_megacli_pdldinfo() -> IoResult<Output> {
+fn execute_megacli_pdldinfo(cmd: &String, adapter: &String) -> IoResult<Output> {
     // TODO: use timeout for execution
-    Command::new("/bin/cat").arg("/Users/ds/node07.ldpdinfo.txt").output()
+    Command::new(cmd.clone()).arg(MEGA_PARAM_LDPDINFO).arg(format!("-a{}", adapter)).arg("-noLog").output()
 }
 
 fn pdinfo_to_samples(pdinfo: PdInfo) -> Vec<Sample> {

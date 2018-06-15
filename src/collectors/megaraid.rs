@@ -47,6 +47,12 @@ impl Collector for Megaraid {
 
     fn id(&self) -> &Id { &self.id }
 
+    fn metadata(&self) -> Vec<Metadata> {
+        let mut metadata = metadata();
+        let result = metadata.drain().map(|(_, v)| v).collect();
+        result
+    }
+
     #[allow(unstable_name_collision)]
     fn collect(&self) -> Result<Vec<Sample>, Error> {
         let pdinfos = try!(get_ldpdinfo());
@@ -75,11 +81,6 @@ impl Collector for Megaraid {
 
     fn shutdown(&mut self) {}
 
-    fn metadata(&self) -> Vec<Metadata> {
-        let mut metadata = metadata();
-        let result = metadata.drain().map(|(_, v)| v).collect();
-        result
-    }
 }
 
 fn metadata() -> HashMap<String, Metadata> {

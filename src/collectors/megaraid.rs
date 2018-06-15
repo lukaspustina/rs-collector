@@ -13,7 +13,6 @@ static METRIC_NAME_HWDISK: &'static str = "hw.disk";
 
 pub struct Megaraid {
     id: Id,
-    metadata: HashMap<String, Metadata>,
 }
 
 #[derive(Debug)]
@@ -26,8 +25,7 @@ pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
     if let Some(ref cfg) = config.Megaraid {
         info!("Created instance of Megaraid collector");
         let id = format!("megaraid#{}", "0");
-        let metadata = metadata();
-        let collector = Megaraid { id: id, metadata: metadata };
+        let collector = Megaraid { id: id };
         vec![Box::new(collector)]
     } else {
         Vec::new()
@@ -48,9 +46,32 @@ impl Collector for Megaraid {
     fn id(&self) -> &Id { &self.id }
 
     fn metadata(&self) -> Vec<Metadata> {
-        let mut metadata = metadata();
-        let result = metadata.drain().map(|(_, v)| v).collect();
-        result
+        vec![
+            Metadata::new(format!("{}.mediaerrors", METRIC_NAME_HWDISK),
+                          Rate::Gauge,
+                          "",
+                          "Number of media errors reported for the device by the RAID controller. Should ideally be 0, but need not signify a problem on its own unless it keeps growing or if multiple disks in the same array have some (http://www.theprojectbot.com/what-is-a-punctured-raid-array/)!"),
+            Metadata::new(format!("{}.othererrors", METRIC_NAME_HWDISK),
+                          Rate::Gauge,
+                          "",
+                          "Number of other errors reported for the device by the RAID controller. Should ideally be 0. Definition of this vague."),
+            Metadata::new(format!("{}.predfailerrors", METRIC_NAME_HWDISK),
+                          Rate::Gauge,
+                          "",
+                          "Number of errors that are considered critical by the RAID controller. Must be 0. Cause for immediate drive replacement."),
+            Metadata::new(format!("{}.smartflag", METRIC_NAME_HWDISK),
+                          Rate::Gauge,
+                          "Enum",
+                          "0: The drive's S.M.A.R.T. considers it ok. // 1: The drive has raised an alert. Cause for drive replacement."),
+            Metadata::new(format!("{}.firmwarestate", METRIC_NAME_HWDISK),
+                          Rate::Gauge,
+                          "Enum",
+                          "Defined by MegaCli. 0: Online // 1: Online, Spun Down // 2: Hotspare, Spun up // 3: Hotspare, Spun down // 4: Unconfigured(good) // 5: Unconfigured(good), Spun down // 6: Unconfigured(bad) // 7: Rebuild // 8: not Online // 9: Failed // 10: None"),
+            Metadata::new(format!("{}.predfaileventno", METRIC_NAME_HWDISK),
+                          Rate::Counter,
+                          "",
+                          "Sequence number of the most recent recorded predictive failure event. It is unclear of this resets to 0 for new drives."),
+        ]
     }
 
     #[allow(unstable_name_collision)]
@@ -59,19 +80,8 @@ impl Collector for Megaraid {
 
         let results: Vec<Vec<Sample>> =
             pdinfos.into_iter()
-                .map(|pdinfo| pdinfo_to_samples(&self.metadata, pdinfo))
+                .map(|pdinfo| pdinfo_to_samples(pdinfo))
                 .collect();
-
-
-//
-//        let (oks, fails): (Vec<_>, Vec<_>) = results.into_iter().partition(Result::is_ok);
-//        if !fails.is_empty() {
-//            for f in fails {
-//                if let Err(err) = f {
-//                    warn!("Failed to parse MegaCli64 stats: {}", err);
-//                }
-//            }
-//        }
 
         let result = results.into_iter().flatten().collect();
         trace!("Collected these Megaraid samples: '{:#?}'", result);
@@ -80,19 +90,12 @@ impl Collector for Megaraid {
     }
 
     fn shutdown(&mut self) {}
-
+    fn get_tick_interval(&self) -> i32 {
+        8 // no need to ask all disks every 15 seconds;
+    }
 }
 
-fn metadata() -> HashMap<String, Metadata> {
-    let mut metadata: HashMap<String, Metadata> = HashMap::new();
-    metadata.insert("mediaerrors".to_string(),
-                    Metadata::new(format!("{}.mediaerrors", METRIC_NAME_HWDISK),
-                                  Rate::Gauge,
-                                  "None",
-                                  "Reported media error count"));
 
-    metadata
-}
 
 fn handle_command_output(command: &str, result: IoResult<Output>) -> Result<Output, Error> {
     match result {
@@ -119,7 +122,7 @@ fn handle_command_output(command: &str, result: IoResult<Output>) -> Result<Outp
 
 #[derive(Debug)]
 struct InquiryData {
-    manuf: String,
+    manufacturer: String,
     model: String,
     serial: String,
 }
@@ -257,13 +260,13 @@ fn parse_inquiry_data(raw_inquiry_data: &str) -> Option<InquiryData> {
             let intel_serial = part0.substring(0, part0.len() - intel.len());
 
             Some(InquiryData {
-                manuf: String::from("INTEL"),
+                manufacturer: String::from("INTEL"),
                 model: String::from(parts[1]),
                 serial: intel_serial,
             })
         } else {
             Some(InquiryData {
-                manuf: String::from(parts[0]),
+                manufacturer: String::from(parts[0]),
                 model: String::from(parts[1]),
                 serial: String::from(parts[2]),
             })
@@ -277,16 +280,19 @@ fn parse_inquiry_data(raw_inquiry_data: &str) -> Option<InquiryData> {
 
 fn parse_firmware_state(raw_firmware_state: &str) -> Option<u8> {
     match raw_firmware_state {
-        "Failed" => Some(8),
-        "not Online" => Some(7),
-        "Unconfigured(bad)" => Some(6),
-        "Unconfigured(good), Spun down" => Some(5),
-        "Hotspare, Spun down" => Some(4),
-        "Hotspare, Spun up" => Some(3),
-        "Rebuild" => Some(2),
-        "Online, Spun Down" => Some(1),
+        "Online" => Some(0),
         "Online, Spun Up" => Some(0),
-        _ => None
+        "Online, Spun Down" => Some(1),
+        "Hotspare, Spun up" => Some(2),
+        "Hotspare, Spun down" => Some(3),
+        "Unconfigured(good)" => Some(4),
+        "Unconfigured(good), Spun down" => Some(5),
+        "Unconfigured(bad)" => Some(6),
+        "Rebuild" => Some(7),
+        "not Online" => Some(8),
+        "Failed" => Some(9),
+        "None" => Some(10),
+        _ => None,
     }
 }
 
@@ -402,7 +408,7 @@ fn get_ldpdinfo() -> Result<Vec<PdInfo>, Error> {
                 _ => None
             } {
                 if let Some(disk) = current_disk {
-                    current_disk = Some(disk.manufacturer(inquiry_data.manuf)
+                    current_disk = Some(disk.manufacturer(inquiry_data.manufacturer)
                         .model(inquiry_data.model)
                         .serial_number(inquiry_data.serial));
                 }
@@ -419,10 +425,10 @@ fn get_ldpdinfo() -> Result<Vec<PdInfo>, Error> {
 
 fn execute_megacli_pdldinfo() -> IoResult<Output> {
     // TODO: use timeout for execution
-    Command::new("/bin/cat").arg("/Users/ds/ldpdinfo.txt").output()
+    Command::new("/bin/cat").arg("/Users/ds/node07.ldpdinfo.txt").output()
 }
 
-fn pdinfo_to_samples(_: &HashMap<String, Metadata>, pdinfo: PdInfo) -> Vec<Sample> {
+fn pdinfo_to_samples(pdinfo: PdInfo) -> Vec<Sample> {
     let mut tags = Tags::new();
 
     if let Some(x) = pdinfo.slot_number {
@@ -450,7 +456,7 @@ fn pdinfo_to_samples(_: &HashMap<String, Metadata>, pdinfo: PdInfo) -> Vec<Sampl
         .map(|x| samples.push(Sample::new_with_tags("othererrors", x, tags.clone())));
     pdinfo.predictive_failure_errors
         .map(|x| samples.push(Sample::new_with_tags("predfailerrors", x, tags.clone())));
-    pdinfo.smart_flag // todo bool nach 0 / 1
+    pdinfo.smart_flag
         .map(|x| samples.push(Sample::new_with_tags("smartflag", if x { 1 } else { 0 }, tags.clone())));
     pdinfo.firmware_state
         .map(|x| samples.push(Sample::new_with_tags("firmwarestate", x, tags.clone())));

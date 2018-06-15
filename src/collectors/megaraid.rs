@@ -407,7 +407,7 @@ fn get_ldpdinfo() -> Result<Vec<PdInfo>, Error> {
                 }
             }
         } else {
-            debug!("Line '{:?}' did not match any regexes", line);
+            trace!("Line '{:?}' did not match any regexes", line);
         }
     }
     if let Some(disk) = current_disk {

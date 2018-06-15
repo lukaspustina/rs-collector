@@ -416,15 +416,22 @@ fn execute_megacli_pdldinfo() -> IoResult<Output> {
 fn pdinfo_to_samples(_: &HashMap<String, Metadata>, pdinfo: PdInfo) -> Vec<Sample> {
     let mut tags = Tags::new();
 
-    if let Some(slotnum) = pdinfo.slot_number {
-        tags.insert("slot_number".to_string(), slotnum.to_string());
+    if let Some(x) = pdinfo.slot_number {
+        tags.insert("slot_number".to_string(), x.to_string());
     }
-    if let Some(encid) = pdinfo.enclosure_id {
-        tags.insert("enclosure_id".to_string(), encid.to_string());
+    if let Some(x) = pdinfo.enclosure_id {
+        tags.insert("enclosure_id".to_string(), x.to_string());
     }
-    if let Some(serial) = pdinfo.serial_number {
-        tags.insert("serial_number".to_string(), serial.to_string());
+    if let Some(x) = pdinfo.serial_number {
+        tags.insert("serial_number".to_string(), x.to_string());
     }
+    if let Some(x) = pdinfo.model {
+        tags.insert("model".to_string(), x.to_string());
+    }
+    if let Some(x) = pdinfo.manufacturer {
+        tags.insert("manufacturer".to_string(), x.to_string());
+    }
+
 
     let mut samples = Vec::new();
 

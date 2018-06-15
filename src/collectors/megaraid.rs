@@ -337,60 +337,68 @@ fn get_ldpdinfo() -> Result<Vec<PdInfo>, Error> {
 
 
     let mut pdinfos = Vec::new();
-    let mut current_disk: Option<PdInfoBuilder> = None;
+    let mut current_disk_builder: Option<PdInfoBuilder> = None;
 
 
     for line in lines {
-        // Next Disk Section Begins
-
         if let Some(caps) = re_enclosure_device_id.captures(line) {
-            if let Some(disk) = current_disk {
-                pdinfos.push(disk.build());
+            /*
+             * A Physical Disk Section Begins with this line.
+             * Push whatever we have collected so far as a new PdInfo
+             * and set up a new builder. Also covers the first section
+             * where there is no current_disk_builder yet.
+             */
+            if let Some(b) = current_disk_builder {
+                pdinfos.push(b.build());
             }
-            let mut disk = PdInfoBuilder::new();
 
-            let c = caps.get(1).unwrap().as_str().parse()?;
-            current_disk = Some(disk.enclosure_id(c));
+            let mut new_builder = PdInfoBuilder::new();
+
+            if let Some(c) = caps.get(1) {
+                let x = c.as_str().parse()?;
+                new_builder = new_builder.enclosure_id(x);
+            }
+            current_disk_builder = Some(new_builder);
         } else if let Some(caps) = re_slot_number.captures(line) {
             if let Some(c) = caps.get(1) {
                 let x = c.as_str().parse()?;
-                if let Some(disk) = current_disk {
-                    current_disk = Some(disk.slot_number(x));
+                if let Some(disk) = current_disk_builder {
+                    current_disk_builder = Some(disk.slot_number(x));
                 }
             }
         } else if let Some(caps) = re_media_error_count.captures(line) {
             if let Some(c) = caps.get(1) {
                 let x = c.as_str().parse()?;
-                if let Some(disk) = current_disk {
-                    current_disk = Some(disk.media_errors(x));
+                if let Some(disk) = current_disk_builder {
+                    current_disk_builder = Some(disk.media_errors(x));
                 }
             }
         } else if let Some(caps) = re_other_error_count.captures(line) {
             if let Some(c) = caps.get(1) {
                 let x = c.as_str().parse()?;
-                if let Some(disk) = current_disk {
-                    current_disk = Some(disk.other_errors(x));
+                if let Some(disk) = current_disk_builder {
+                    current_disk_builder = Some(disk.other_errors(x));
                 }
             }
         } else if let Some(caps) = re_predictive_failure_count.captures(line) {
             if let Some(c) = caps.get(1) {
                 let x = c.as_str().parse()?;
-                if let Some(disk) = current_disk {
-                    current_disk = Some(disk.predictive_failure_errors(x));
+                if let Some(disk) = current_disk_builder {
+                    current_disk_builder = Some(disk.predictive_failure_errors(x));
                 }
             }
         } else if let Some(caps) = re_predictive_failure_count_event_seqno.captures(line) {
             if let Some(c) = caps.get(1) {
                 let x = c.as_str().parse()?;
-                if let Some(disk) = current_disk {
-                    current_disk = Some(disk.last_predictive_failure_event_seqno(x));
+                if let Some(disk) = current_disk_builder {
+                    current_disk_builder = Some(disk.last_predictive_failure_event_seqno(x));
                 }
             }
         } else if let Some(caps) = re_drive_flagged_smart_alert.captures(line) {
             if let Some(c) = caps.get(1) {
-                if let Some(disk) = current_disk {
+                if let Some(disk) = current_disk_builder {
                     let smartflag = c.as_str().to_lowercase() == "yes";
-                    current_disk = Some(disk.smart_flag(smartflag));
+                    current_disk_builder = Some(disk.smart_flag(smartflag));
                 }
             }
         } else if let Some(caps) = re_firmware_state.captures(line) {
@@ -398,8 +406,8 @@ fn get_ldpdinfo() -> Result<Vec<PdInfo>, Error> {
                 Some(c) => parse_firmware_state(c.as_str()),
                 _ => None
             } {
-                if let Some(disk) = current_disk {
-                    current_disk = Some(disk.firmware_state(firmware_state));
+                if let Some(disk) = current_disk_builder {
+                    current_disk_builder = Some(disk.firmware_state(firmware_state));
                 }
             }
         } else if let Some(caps) = re_inquiry_data.captures(line) {
@@ -407,8 +415,8 @@ fn get_ldpdinfo() -> Result<Vec<PdInfo>, Error> {
                 Some(c) => parse_inquiry_data(c.as_str()),
                 _ => None
             } {
-                if let Some(disk) = current_disk {
-                    current_disk = Some(disk.manufacturer(inquiry_data.manufacturer)
+                if let Some(disk) = current_disk_builder {
+                    current_disk_builder = Some(disk.manufacturer(inquiry_data.manufacturer)
                         .model(inquiry_data.model)
                         .serial_number(inquiry_data.serial));
                 }
@@ -417,7 +425,7 @@ fn get_ldpdinfo() -> Result<Vec<PdInfo>, Error> {
             trace!("Line '{:?}' did not match any regexes", line);
         }
     }
-    if let Some(disk) = current_disk {
+    if let Some(disk) = current_disk_builder {
         pdinfos.push(disk.build());
     }
     Ok(pdinfos)

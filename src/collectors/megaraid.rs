@@ -345,37 +345,45 @@ fn get_ldpdinfo() -> Result<Vec<PdInfo>, Error> {
             let c = caps.get(1).unwrap().as_str().parse()?;
             current_disk = Some(disk.enclosure_id(c));
         } else if let Some(caps) = re_slot_number.captures(line) {
-            let c = caps.get(1).unwrap().as_str().parse()?;
-            if let Some(disk) = current_disk {
-                current_disk = Some(disk.slot_number(c));
+            if let Some(c) = caps.get(1) {
+                let x = c.as_str().parse()?;
+                if let Some(disk) = current_disk {
+                    current_disk = Some(disk.slot_number(x));
+                }
             }
         } else if let Some(caps) = re_media_error_count.captures(line) {
-            let c = caps.get(1).unwrap().as_str().parse()?;
-            if let Some(disk) = current_disk {
-                current_disk = Some(disk.media_errors(c));
+            if let Some(c) = caps.get(1) {
+                let x = c.as_str().parse()?;
+                if let Some(disk) = current_disk {
+                    current_disk = Some(disk.media_errors(x));
+                }
             }
         } else if let Some(caps) = re_other_error_count.captures(line) {
-            let c = caps.get(1).unwrap().as_str().parse()?;
-            if let Some(disk) = current_disk {
-                current_disk = Some(disk.other_errors(c));
+            if let Some(c) = caps.get(1) {
+                let x = c.as_str().parse()?;
+                if let Some(disk) = current_disk {
+                    current_disk = Some(disk.other_errors(x));
+                }
             }
         } else if let Some(caps) = re_predictive_failure_count.captures(line) {
-            let c = caps.get(1).unwrap().as_str().parse()?;
-            if let Some(disk) = current_disk {
-                current_disk = Some(disk.predictive_failure_errors(c));
+            if let Some(c) = caps.get(1) {
+                let x = c.as_str().parse()?;
+                if let Some(disk) = current_disk {
+                    current_disk = Some(disk.predictive_failure_errors(x));
+                }
             }
         } else if let Some(caps) = re_predictive_failure_count_event_seqno.captures(line) {
-            let c = caps.get(1).unwrap().as_str().parse()?;
-            if let Some(disk) = current_disk {
-                current_disk = Some(disk.last_predictive_failure_event_seqno(c));
+            if let Some(c) = caps.get(1) {
+                let x = c.as_str().parse()?;
+                if let Some(disk) = current_disk {
+                    current_disk = Some(disk.last_predictive_failure_event_seqno(x));
+                }
             }
         } else if let Some(caps) = re_drive_flagged_smart_alert.captures(line) {
-            if let Some(disk) = current_disk {
-                match caps.get(1) {
-                    Some(c) if c.as_str().to_lowercase() == "yes" =>
-                        current_disk = Some(disk.smart_flag(true)),
-                    _ =>
-                        current_disk = Some(disk.smart_flag(false))
+            if let Some(c) = caps.get(1) {
+                if let Some(disk) = current_disk {
+                    let smartflag = c.as_str().to_lowercase() == "yes";
+                    current_disk = Some(disk.smart_flag(smartflag));
                 }
             }
         } else if let Some(caps) = re_firmware_state.captures(line) {

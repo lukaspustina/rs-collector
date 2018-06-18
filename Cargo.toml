@@ -1,6 +1,6 @@
 [package]
 name = "rs-collector"
-version = "0.1.6"
+version = "0.1.7"
 authors = ["Lukas Pustina <lukas@pustina.net>"]
 description = "An scollector compatible telemetry collector written in Rust"
 repository = "https://github.com/lukaspustina/rs-collector.git"

@@ -40,6 +40,7 @@ _rs-collector_ is a [Bosun](https://bosun.org) compatible collector for various 
 1. [Galera](#galera) - Collects metrics about the cluster status and cluster sync performance of a MySQL Galera cluster.
 1. [HasIpAddr](#hasipaddr) - Checks if a host has bound specific IPv4 addresses.
 1. [JVM](#JVM) - Collects garbage collection statistics.
+1. [Megaraid](#megaraid) - Collects Megaraid disk statistics.
 1. [MongoDB](#mongo) - Collects replicaset metrics.
 1. [Postfix](#postfix) - Collects queue lengths for all postfix queues.
 1. [rs-collector](#rs-collector) - Collects internal metrics for rs-collector.
@@ -131,6 +132,19 @@ alert os.net.vrrp-vip-failed {
 The _JVM_ collector collects garbage collection statistics, i.&nbsp;e. those that `jstat -gc` reveals for each specified, running JVM. This collector has been tested with OpenJDK "7u51-2.4.6-1ubuntu4" and Oracle JDK "1.8.0_121". JVMs are identified by a regular expression that matches the class name or the command line arguments.
 
 This collector only collects statistics for specified JVMs; cf. example configuration. It currently does not distinguish between multiple instances of the same identified JVM. 
+
+
+### Megaraid
+
+The _Megaraid_ collector collector disk drive statistics using the MegaCLI tool. It collects statistics like
+
+* `hw.storage.drivestats.mediaerrors`: Number of media errors reported for the device by the RAID controller.
+* `hw.storage.drivestats.othererrors`: Number of other errors reported for the device by the RAID controller.
+* `hw.storage.drivestats.predfailerrors`: Number of errors that are considered critical by the RAID controller.
+* `hw.storage.drivestats.smartflag`
+* `hw.storage.drivestats.firmwarestate`
+* `hw.storage.drivestats.predfaileventno`: Sequence number of the most recent recorded predictive failure event.
+
 
 ### Mongo
 

@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+
+## [0.1.7] - 2018-06-18
+
+### Added
+- Megaraid collector
+
+
 ## [0.1.6] - 2018-05-29
 
 ### Added
@@ -15,5 +22,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - MongoDB collector automatically recognizes if replSetGetStatus is suitable. In case of mongos or non replicated mongod, this metric is omitted.
 
 
-[Unreleased]: https://github.com/lukaspustina/ceres/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/lukaspustina/ceres/compare/v0.1.7...HEAD
+[v0.1.7]: https://github.com/lukaspustina/ceres/compare/v0.1.6...v0.1.7
 [v0.1.6]: https://github.com/lukaspustina/ceres/compare/v0.1.5...v0.1.6

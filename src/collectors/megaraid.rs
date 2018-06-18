@@ -10,7 +10,7 @@ use std::process::{Command, Output};
 use std::io::Result as IoResult;
 use itertools::Itertools;
 
-static METRIC_NAME_HWDISK: &'static str = "hw.disk";
+static METRIC_PREFIX: &'static str = "hw.storage.drivestats";
 static MEGA_DEFAULT_BINARY: &'static str = "/opt/MegaRAID/MegaCli/MegaCli64";
 static MEGA_PARAM_LDPDINFO: &'static str = "-LdPdInfo";
 static MEGA_PARAM_ALL_ADAPTERS: &'static str = "ALL";
@@ -65,30 +65,40 @@ impl Collector for Megaraid {
 
     fn metadata(&self) -> Vec<Metadata> {
         vec![
-            Metadata::new(format!("{}.mediaerrors", METRIC_NAME_HWDISK),
+            Metadata::new(format!("{}.mediaerrors", METRIC_PREFIX),
                           Rate::Gauge,
                           "",
-                          "Number of media errors reported for the device by the RAID controller. Should ideally be 0, but need not signify a problem on its own unless it keeps growing or if multiple disks in the same array have some (http://www.theprojectbot.com/what-is-a-punctured-raid-array/)!"),
-            Metadata::new(format!("{}.othererrors", METRIC_NAME_HWDISK),
+                          "Number of media errors reported for the device by the RAID controller. \
+                           Should ideally be 0, but need not signify a problem on its own unless it keeps \
+                           growing or if multiple disks in the same array have some \
+                           (http://www.theprojectbot.com/what-is-a-punctured-raid-array/)!"),
+            Metadata::new(format!("{}.othererrors", METRIC_PREFIX),
                           Rate::Gauge,
                           "",
-                          "Number of other errors reported for the device by the RAID controller. Should ideally be 0. Definition of this vague."),
-            Metadata::new(format!("{}.predfailerrors", METRIC_NAME_HWDISK),
+                          "Number of other errors reported for the device by the RAID controller. \
+                           Should ideally be 0. Definition of this vague."),
+            Metadata::new(format!("{}.predfailerrors", METRIC_PREFIX),
                           Rate::Gauge,
                           "",
-                          "Number of errors that are considered critical by the RAID controller. Must be 0. Cause for immediate drive replacement."),
-            Metadata::new(format!("{}.smartflag", METRIC_NAME_HWDISK),
+                          "Number of errors that are considered critical by the RAID controller. \
+                           Must be 0. Cause for immediate drive replacement."),
+            Metadata::new(format!("{}.smartflag", METRIC_PREFIX),
                           Rate::Gauge,
                           "Enum",
-                          "0: The drive's S.M.A.R.T. considers it ok. // 1: The drive has raised an alert. Cause for drive replacement."),
-            Metadata::new(format!("{}.firmwarestate", METRIC_NAME_HWDISK),
+                          "0: The drive's S.M.A.R.T. considers it ok. // 1: The drive has raised \
+                          an alert. Cause for drive replacement."),
+            Metadata::new(format!("{}.firmwarestate", METRIC_PREFIX),
                           Rate::Gauge,
                           "Enum",
-                          "Defined by MegaCli. 0: Online // 1: Online, Spun Down // 2: Hotspare, Spun up // 3: Hotspare, Spun down // 4: Unconfigured(good) // 5: Unconfigured(good), Spun down // 6: Unconfigured(bad) // 7: Rebuild // 8: not Online // 9: Failed // 10: None"),
-            Metadata::new(format!("{}.predfaileventno", METRIC_NAME_HWDISK),
+                          "Defined by MegaCli. 0: Online // 1: Online, Spun Down \
+                          // 2: Hotspare, Spun up // 3: Hotspare, Spun down // 4: Unconfigured(good) \
+                          // 5: Unconfigured(good), Spun down // 6: Unconfigured(bad) // 7: Rebuild \
+                          // 8: not Online // 9: Failed // 10: None"),
+            Metadata::new(format!("{}.predfaileventno", METRIC_PREFIX),
                           Rate::Counter,
                           "",
-                          "Sequence number of the most recent recorded predictive failure event. It is unclear of this resets to 0 for new drives."),
+                          "Sequence number of the most recent recorded predictive failure event. \
+                          It is unclear if this resets to 0 for new drives."),
         ]
     }
 
@@ -465,21 +475,32 @@ fn pdinfo_to_samples(pdinfo: PdInfo) -> Vec<Sample> {
         tags.insert("manufacturer".to_string(), x.to_string());
     }
 
-
     let mut samples = Vec::new();
 
     pdinfo.media_errors
-        .map(|x| samples.push(Sample::new_with_tags("mediaerrors", x, tags.clone())));
+        .map(|x| samples.push(Sample::new_with_tags(format!("{}.mediaerrors", METRIC_PREFIX),
+                                                    x,
+                                                    tags.clone())));
     pdinfo.other_errors
-        .map(|x| samples.push(Sample::new_with_tags("othererrors", x, tags.clone())));
+        .map(|x| samples.push(Sample::new_with_tags(format!("{}.othererrors", METRIC_PREFIX),
+                                                    x,
+                                                    tags.clone())));
     pdinfo.predictive_failure_errors
-        .map(|x| samples.push(Sample::new_with_tags("predfailerrors", x, tags.clone())));
+        .map(|x| samples.push(Sample::new_with_tags(format!("{}.predfailerrors", METRIC_PREFIX),
+                                                    x,
+                                                    tags.clone())));
     pdinfo.smart_flag
-        .map(|x| samples.push(Sample::new_with_tags("smartflag", if x { 1 } else { 0 }, tags.clone())));
+        .map(|x| samples.push(Sample::new_with_tags(format!("{}.smartflag", METRIC_PREFIX),
+                                                    if x { 1 } else { 0 },
+                                                    tags.clone())));
     pdinfo.firmware_state
-        .map(|x| samples.push(Sample::new_with_tags("firmwarestate", x, tags.clone())));
+        .map(|x| samples.push(Sample::new_with_tags(format!("{}.firmwarestate", METRIC_PREFIX),
+                                                    x,
+                                                    tags.clone())));
     pdinfo.last_predictive_failure_event_seqno
-        .map(|x| samples.push(Sample::new_with_tags("predfaileventno", x, tags.clone())));
+        .map(|x| samples.push(Sample::new_with_tags(format!("{}.predfaileventno", METRIC_PREFIX),
+                                                    x,
+                                                    tags.clone())));
 
     samples
 }

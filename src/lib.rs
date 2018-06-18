@@ -10,6 +10,7 @@ extern crate chan_signal;
 extern crate log;
 extern crate env_logger;
 extern crate get_if_addrs;
+extern crate is_executable;
 extern crate itertools;
 extern crate mongodb;
 extern crate mysql;

@@ -64,15 +64,19 @@ pub fn create_collectors(config: &Config) -> Vec<Box<Collector + Send>> {
     let mut jvm = jvm::create_instances(config);
     collectors.append(&mut jvm);
 
-     // Create Mongo collector instances
+    // Create Megaraid collector instances
+    let mut megaraids= megaraid::create_instances(config);
+    collectors.append(&mut megaraids);
+
+    // Create Mongo collector instances
     let mut mongo = mongo::create_instances(config);
     collectors.append(&mut mongo);
 
-     // Create Postfix collector instance
+    // Create Postfix collector instance
     let mut postfix = postfix::create_instances(config);
     collectors.append(&mut postfix);
 
-     // Create internal rs-collector collector instance
+    // Create internal rs-collector collector instance
     let mut rscollector = rscollector::create_instances(config);
     collectors.append(&mut rscollector);
 
@@ -85,4 +89,5 @@ pub mod jvm;
 pub mod mongo;
 pub mod postfix;
 pub mod rscollector;
+pub mod megaraid;
 

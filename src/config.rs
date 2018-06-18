@@ -10,6 +10,7 @@ use collectors::hasipaddr::HasIpAddrConfig;
 use collectors::jvm::JvmConfig;
 use collectors::postfix::PostfixConfig;
 use collectors::mongo::MongoConfig;
+use collectors::megaraid::MegaraidConfig;
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]
@@ -33,6 +34,8 @@ pub struct Config {
     pub Mongo: Vec<MongoConfig>,
     /// Postfix config; if enabled
     pub Postfix: Option<PostfixConfig>,
+    /// Postfix config; if enabled
+    pub Megaraid: Option<MegaraidConfig>,
     /// Deactivate Data Transmission to Bosun
     pub DontSend: Option<bool>
 }
@@ -76,6 +79,7 @@ impl Default for Config {
             Jvm: Vec::new(),
             Mongo: Vec::new(),
             Postfix: None,
+            Megaraid: None,
             DontSend: Some(false),
         }
     }

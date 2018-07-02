@@ -65,6 +65,19 @@ deploy:
       condition:
       - "$TRAVIS_OS_NAME == linux"
       - "$DEPLOY_ARCH"
+  - provider: packagecloud
+    username: centerdevice
+    token:
+      secure: KKpyItzkAKRJLhh5fzmQoLSFPlWHLNZuFYlFp1reN/j6LweSfXpNYEAn4vgS5qad38Szx69yMVPQuMYMJ42zPBo0/n0kBUYZdqLnMAQUVPbGHVu7QqGEhBqNE2UbL7uzVwnacMkb92gD3z4kutnSbY0tIYhVGHI3wRnnTsjimQBwUlAqeyTDEvBJg2d34TbUCtoJ1HqKN0KpeZMx5xSTBqK+z7XYkz5KYxXhUlGQJHd0HD2JQs3muTcAbK1pr30tePjdLnMy4jKdP2C3e2KY35XIJrHGFSp6z+UFTJKlxQ01MwxX95ZoNzmcoadEGSoH7hdNqT9ti61GWjP3txv2Cuco9hZRn5c/koKdbr7RuWcfStXYewDmI6OwfdPcgzCGMfsZ3jG0kG9P/d9kMDEiOIetU+Ywwb7FOJoAxtxsFAIVg+GqGAREdPHqdBlKsPZajN3izTk+wqbA31zu6/H+YMdv1nQhnmIYB4AnCWIAvecVqGmNXYSeWvumc1uioPMXO+WeSCUGl6nRCUxgiOFiQQj19fxlyYEa99JbiSDLqGCYAZNerSatkBryuV10h6yaH+TgPuWho4C7Zee3oOa4Qjt2HOsNbcz6W6B1P2Fm81RE4aPb3GMbsg0cDIesoci4zsu3FhGYHnsA2FbSTP3M5RSKpM2jbrfDt+R1PCE1i2I=
+    repository: infrastructure
+    dist: ubuntu/trusty
+    package_glob: "**/*.deb"
+    skip_cleanup: true
+    on:
+      tags: true
+      condition:
+      - "$TRAVIS_OS_NAME == linux"
+      - "$DEPLOY_ARCH"
   - provider: releases
     api_key:
       secure: DGYtB0LUYX6YROgbbvyEMSZTNjF+HPJOWQE2trnat0vRfLyGfKtNPLcXFUgAUwzJ4fIBCbsXkwY94b50BEMYMhcIQIyXhkN7AzZ0Tv+tnN281QW8Ma+2ZXP3vug23v9S6ZtpuXVVSqFuJjAV92TSHO/BoWAGUlK6O3OgJlZ9i4u/venkz1fnUVTgmLsKaNVqyLKKlvkPe/T/CjH3P73b668U3Y9X4IiWLm9adJAhgGutWf+cRpRxRcnY9bh+GcpYq0MoR9FQIWREFtYty3OQZCnsc2FbPKfNm6dkgPzSe01O5Zenf+EfpC1wizEfrL4378a/BDF9F0jSjtIv+M98DJkIJS3zgJ5wQdKxuzYxcqmRs22kgQL1op4P2punvHu82k8rPq1qM80exWxVPMh5DtD6IE+hgOwNL7Mg4R9OHIYrZBXMcJkWS2y+FAwi83EhxpGcpZ4ANhdxIddyloHjnoP9rOxwqoX7iSkuK9zAtVyBPzBwTzd+UUPVFJmcV1HuU0xyG5nvN0nm6m8WKhNowUKFBRqROCpe8rzZSCaPA2iRoFq5dYObNwBWleOF41ANYf4qJge3I1ZPBzoSkIXMS/X6Ifk037KJExRiG5kTnIUqpZ5WDxEQ10LkJ6WpmtbRqnWu0AA1vOF29cXjiyVbiKWgXDfTSUd9L2x6yfhu+Bg=

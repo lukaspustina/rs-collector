@@ -2,13 +2,10 @@ use bosun::{Metadata, Rate, Sample, Tags};
 use collectors::*;
 use config::Config;
 use is_executable::IsExecutable;
-use std::fs;
 use std::path::Path;
 use regex::Regex;
-use std::collections::HashMap;
 use std::process::{Command, Output};
 use std::io::Result as IoResult;
-use itertools::Itertools;
 
 static METRIC_PREFIX: &'static str = "hw.storage.drivestats";
 static MEGA_DEFAULT_BINARY: &'static str = "/opt/MegaRAID/MegaCli/MegaCli64";
@@ -102,7 +99,6 @@ impl Collector for Megaraid {
         ]
     }
 
-    #[allow(unstable_name_collision)]
     fn collect(&self) -> Result<Vec<Sample>, Error> {
         let pdinfos = get_ldpdinfo(self.megacli_command.clone(), self.adapter.clone())?;
 

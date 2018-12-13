@@ -85,7 +85,7 @@ pub struct Bosun {
 
 impl Bosun {
     pub fn new(host: &str, hostname: &str, default_tags: &Tags, from_main_rx: Receiver<BosunRequest>) -> Bosun {
-        let bosun_client = BosunClient::new(host);
+        let bosun_client = BosunClient::new(host, 3);
         Bosun {
             queue: Vec::new(),
             from_main_rx: from_main_rx,

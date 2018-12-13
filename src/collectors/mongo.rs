@@ -9,9 +9,8 @@ use bosun::{Metadata, Rate, Sample, Tags};
 use collectors::{Collector, Error, Id};
 use config::Config;
 
-use bson::{Bson, Document};
 use chrono::prelude::*;
-use mongodb::{Client, ClientOptions, CommandType, Error as MongodbError, ThreadedClient};
+use mongodb::{Bson, Document, Client, ClientOptions, CommandType, Error as MongodbError, ThreadedClient};
 use mongodb::db::{ThreadedDatabase};
 use std::error::Error as StdError;
 use std::f64;
@@ -80,10 +79,10 @@ impl Collector for Mongo {
         // TODO: client seems to be _always_ valid, i.e, when connection is impossible
         let options = match (self.ca_cert.as_ref(), self.client_cert.as_ref(), self.client_cert_key.as_ref()) {
             (Some(ref ca_cert), Some(ref client_cert), Some(ref client_cert_key)) => {
-                ClientOptions::with_ssl(ca_cert, client_cert, client_cert_key, true)
+                ClientOptions::with_ssl(Some(ca_cert), client_cert, client_cert_key, true)
             },
             (Some(ref ca_cert), None, None) => {
-                ClientOptions::with_unauthenticated_ssl(ca_cert,false)
+                ClientOptions::with_unauthenticated_ssl(Some(ca_cert),false)
             },
             _ => { ClientOptions::new() }
         };
@@ -400,7 +399,7 @@ fn calculate_oplog_lag(document: &Document) -> Result<(f64, f64, f64), Error> {
     }
 
     for d in secondary_dates.iter() {
-        let diff = primary_date.unwrap().signed_duration_since((**d)).num_milliseconds() as f64;
+        let diff = primary_date.unwrap().signed_duration_since(**d).num_milliseconds() as f64;
         min = min.min(diff);
         max = max.max(diff);
         avg += diff;

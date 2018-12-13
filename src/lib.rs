@@ -2,8 +2,6 @@
 
 extern crate bosun_emitter;
 #[macro_use]
-extern crate bson;
-#[macro_use]
 extern crate chan;
 extern crate chan_signal;
 #[macro_use]
@@ -12,6 +10,7 @@ extern crate env_logger;
 extern crate get_if_addrs;
 extern crate is_executable;
 extern crate itertools;
+#[macro_use]
 extern crate mongodb;
 extern crate mysql;
 #[cfg(target_os = "linux")]

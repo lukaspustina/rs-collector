@@ -11,7 +11,7 @@ static METRIC_NAME_GC: &'static str = "jvm.gc.stats";
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(RustcDecodable)]
+#[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub struct JvmConfig {
     Command: String,
@@ -25,12 +25,12 @@ pub struct Jvm {
 }
 
 pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
-    if !config.Jvm.is_empty() {
+    if let Some(ref jvm) = config.Jvm {
         let id = "jvm".to_string();
         info!("Created instance of JVM collector: {}", id);
 
         let metadata = metadata();
-        let collector = Jvm { id: id, jvms: config.Jvm.clone(), metadata: metadata };
+        let collector = Jvm { id: id, jvms: config.Jvm.clone().unwrap(), metadata: metadata }; // Safe
         vec![Box::new(collector)]
     } else {
         Vec::new()

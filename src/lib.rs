@@ -16,7 +16,9 @@ extern crate mysql;
 #[cfg(target_os = "linux")]
 extern crate procinfo;
 extern crate regex;
-extern crate rustc_serialize;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 extern crate toml;
 
 pub mod bosun;

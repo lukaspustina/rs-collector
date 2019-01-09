@@ -11,12 +11,13 @@ use config::Config;
 
 use chrono::prelude::*;
 use mongodb::{Bson, Document, Client, ClientOptions, CommandType, Error as MongodbError, ThreadedClient};
+use mongodb::common::{ReadMode, ReadPreference as MongoReadPreference};
 use mongodb::db::{ThreadedDatabase};
 use std::error::Error as StdError;
 use std::f64;
 
 #[derive(Debug)]
-#[derive(RustcDecodable)]
+#[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub struct MongoConfig {
     pub Name: String,
@@ -28,6 +29,29 @@ pub struct MongoConfig {
     pub CaCert: Option<String>,
     pub ClientCert: Option<String>,
     pub ClientCertKey: Option<String>,
+    pub ReadPreference: Option<ReadPreference>,
+}
+
+#[derive(Clone, Debug)]
+#[derive(Deserialize)]
+pub enum ReadPreference {
+    Primary,
+    PrimaryPreferred,
+    Secondary,
+    SecondaryPreferred,
+    Nearest,
+}
+
+impl From<ReadPreference> for ReadMode {
+    fn from(rp: ReadPreference) -> ReadMode {
+        match rp {
+            ReadPreference::Primary => ReadMode::Primary,
+            ReadPreference::PrimaryPreferred => ReadMode::PrimaryPreferred,
+            ReadPreference::Secondary => ReadMode::Secondary,
+            ReadPreference::SecondaryPreferred => ReadMode::SecondaryPreferred,
+            ReadPreference::Nearest => ReadMode::Nearest,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -42,31 +66,35 @@ pub struct Mongo {
     client_cert_key: Option<String>,
     ip_or_hostname: String,
     port: u16,
+    read_preference: Option<ReadPreference>,
     client: Option<Client>,
 }
 
 pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
     let mut collectors: Vec<Box<Collector + Send>> = Vec::new();
-    for m in &config.Mongo {
-        let id = format!("mongo#{}#{}@{}:{}",
-                         m.Name, m.User.as_ref().unwrap_or(&"''".to_string()), m.Host, m.Port);
-        info!("Created instance of Mongo collector: {}", id);
+    if let Some(ref mongos) = config.Mongo {
+        for m in mongos {
+            let id = format!("mongo#{}#{}@{}:{}",
+                            m.Name, m.User.as_ref().unwrap_or(&"''".to_string()), m.Host, m.Port);
+            info!("Created instance of Mongo collector: {}", id);
 
-        let collector = Mongo {
-            id: id.clone(), name: m.Name.clone(), user: m.User.clone(), password: m.Password.clone(),
-            use_ssl: m.UseSsl.unwrap_or_else(|| false),
-            ca_cert: m.CaCert.clone(), client_cert: m.ClientCert.clone(), client_cert_key: m.ClientCertKey.clone(),
-            ip_or_hostname: m.Host.clone(), port: m.Port, client: None,
-        };
+            let collector = Mongo {
+                id: id.clone(), name: m.Name.clone(), user: m.User.clone(), password: m.Password.clone(),
+                use_ssl: m.UseSsl.unwrap_or_else(|| false),
+                ca_cert: m.CaCert.clone(), client_cert: m.ClientCert.clone(), client_cert_key: m.ClientCertKey.clone(),
+                ip_or_hostname: m.Host.clone(), port: m.Port, client: None,
+                read_preference: m.ReadPreference.clone(),
+            };
 
-        // TODO: This should be handled by the parser, but that requires serde
-        if collector.use_ssl && collector.ca_cert.is_none() {
-            error!("Failed to create instance of Mongo collector id='{}', because SSL is activated without CA cert", id);
-        } else if collector.client_cert.is_some() && collector.client_cert_key.is_none() {
-            error!("Failed to create instance of Mongo collector id='{}', because client cert is set without client key", id);
-        } else {
-            info!("Created instance of Galera collector: {}", id);
-            collectors.push(Box::new(collector));
+            // TODO: This should be handled by the parser, but that requires serde
+            if collector.use_ssl && collector.ca_cert.is_none() {
+                error!("Failed to create instance of Mongo collector id='{}', because SSL is activated without CA cert", id);
+            } else if collector.client_cert.is_some() && collector.client_cert_key.is_none() {
+                error!("Failed to create instance of Mongo collector id='{}', because client cert is set without client key", id);
+            } else {
+                info!("Created instance of Galera collector: {}", id);
+                collectors.push(Box::new(collector));
+            }
         }
     }
     collectors
@@ -77,7 +105,7 @@ impl Collector for Mongo {
         use std::error::Error;
 
         // TODO: client seems to be _always_ valid, i.e, when connection is impossible
-        let options = match (self.ca_cert.as_ref(), self.client_cert.as_ref(), self.client_cert_key.as_ref()) {
+        let mut options = match (self.ca_cert.as_ref(), self.client_cert.as_ref(), self.client_cert_key.as_ref()) {
             (Some(ref ca_cert), Some(ref client_cert), Some(ref client_cert_key)) => {
                 ClientOptions::with_ssl(Some(ca_cert), client_cert, client_cert_key, true)
             },
@@ -86,6 +114,8 @@ impl Collector for Mongo {
             },
             _ => { ClientOptions::new() }
         };
+        options.read_preference = self.read_preference.clone().map(|x| MongoReadPreference::new(x.into(), None));
+        debug!("Set read preference for {} to {:?}", self.id, &options.read_preference);
         let result = Client::connect_with_options(&self.ip_or_hostname, self.port, options);
         match result {
             Ok(client) => {

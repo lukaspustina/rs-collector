@@ -10,7 +10,7 @@ pub static RS_COLLECTOR_STATS_SAMPLES_METRICNAME: &'static str = "rs-collector.s
 static VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug)]
-#[derive(RustcDecodable)]
+#[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub struct RsCollectorConfig {}
 

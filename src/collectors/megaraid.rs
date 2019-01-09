@@ -21,7 +21,7 @@ pub struct Megaraid {
 
 #[derive(Debug)]
 #[derive(Clone)]
-#[derive(RustcDecodable)]
+#[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub struct MegaraidConfig {
     tick_interval: Option<i32>,

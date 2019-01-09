@@ -16,7 +16,7 @@ static HAS_IP_METRIC_NAME: &'static str = "os.net.has_ipv4s";
 static IPV4_TAG: &'static str = "ipv4";
 
 #[derive(Debug)]
-#[derive(RustcDecodable)]
+#[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub struct HasIpAddrConfig {
     pub Ipv4: Vec<String>,

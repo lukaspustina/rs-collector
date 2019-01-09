@@ -9,7 +9,7 @@ static METRIC_NAME_QUEUES: &'static str = "postfix.queues";
 static POSTFIX_QUEUS: &'static [&'static str] = &["maildrop", "incoming", "hold", "active", "deferred"];
 
 #[derive(Debug)]
-#[derive(RustcDecodable)]
+#[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub struct PostfixConfig {}
 

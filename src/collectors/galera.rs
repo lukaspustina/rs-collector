@@ -9,7 +9,7 @@ use mysql as my;
 use std::path::PathBuf;
 
 #[derive(Debug)]
-#[derive(RustcDecodable)]
+#[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub struct GaleraConfig {
     pub User: Option<String>,

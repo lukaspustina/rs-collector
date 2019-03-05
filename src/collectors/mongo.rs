@@ -79,11 +79,18 @@ pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
             info!("Created instance of Mongo collector: {}", id);
 
             let collector = Mongo {
-                id: id.clone(), name: m.Name.clone(), user: m.User.clone(), password: m.Password.clone(),
+                id: id.clone(),
+                name: m.Name.clone(),
+                user: m.User.clone(),
+                password: m.Password.clone(),
                 use_ssl: m.UseSsl.unwrap_or_else(|| false),
-                ca_cert: m.CaCert.clone(), client_cert: m.ClientCert.clone(), client_cert_key: m.ClientCertKey.clone(),
-                ip_or_hostname: m.Host.clone(), port: m.Port, client: None,
+                ca_cert: m.CaCert.clone(),
+                client_cert: m.ClientCert.clone(),
+                client_cert_key: m.ClientCertKey.clone(),
+                ip_or_hostname: m.Host.clone(),
+                port: m.Port,
                 read_preference: m.ReadPreference.clone(),
+                client: None,
             };
 
             // TODO: This should be handled by the parser, but that requires serde
@@ -140,12 +147,14 @@ impl Collector for Mongo {
             });
         metric_data.extend(&mut server_status);
 
-        let mut rs_status = try!(self.rs_status()).into_iter()
-            .map(|mut s| {
-                s.tags.insert("name".to_string(), self.name.clone());
-                s
-            });
-        metric_data.extend(&mut rs_status);
+        if try!(self.is_mongod())  {
+            let mut rs_status = try!(self.rs_status()).into_iter()
+                .map(|mut s| {
+                    s.tags.insert("name".to_string(), self.name.clone());
+                    s
+                });
+            metric_data.extend(&mut rs_status);
+        }
 
         debug!("metric_data = {:#?}", metric_data);
         Ok(metric_data)
@@ -330,6 +339,21 @@ impl Mongo {
         }
 
         Ok(samples)
+    }
+
+
+    // TODO: Autodetect using https://docs.mongodb.com/manual/reference/command/listDatabases/
+    // if we're querying a mongoD or a mongoS
+    fn is_mongod(&self) -> Result<bool, Error> {
+        let mongod = self.read_preference.is_none();
+
+        if mongod {
+            debug!("Detected mongod for {}.", self.id);
+        } else {
+            debug!("Detected mongos for {}.", self.id);
+        }
+
+        Ok(mongod)
     }
 }
 

@@ -5,9 +5,9 @@
 // * http://blog.mlab.com/2013/03/replication-lag-the-facts-of-life/
 //
 
-use bosun::{Metadata, Rate, Sample, Tags};
-use collectors::{Collector, Error, Id};
-use config::Config;
+use crate::bosun::{Metadata, Rate, Sample, Tags};
+use crate::collectors::{Collector, Error, Id};
+use crate::config::Config;
 
 use chrono::prelude::*;
 use mongodb::{Bson, Document, Client, ClientOptions, CommandType, Error as MongodbError, ThreadedClient};
@@ -45,8 +45,8 @@ pub struct Mongo {
     client: Option<Client>,
 }
 
-pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
-    let mut collectors: Vec<Box<Collector + Send>> = Vec::new();
+pub fn create_instances(config: &Config) -> Vec<Box<dyn Collector + Send>> {
+    let mut collectors: Vec<Box<dyn Collector + Send>> = Vec::new();
     for m in &config.Mongo {
         let id = format!("mongo#{}#{}@{}:{}",
                          m.Name, m.User.as_ref().unwrap_or(&"''".to_string()), m.Host, m.Port);
@@ -103,14 +103,14 @@ impl Collector for Mongo {
     fn collect(&self) -> Result<Vec<Sample>, Error> {
         let mut metric_data = Vec::new();
 
-        let mut server_status = try!(self.server_status()).into_iter()
+        let mut server_status = r#try!(self.server_status()).into_iter()
             .map(|mut s| {
                 s.tags.insert("name".to_string(), self.name.clone());
                 s
             });
         metric_data.extend(&mut server_status);
 
-        let mut rs_status = try!(self.rs_status()).into_iter()
+        let mut rs_status = r#try!(self.rs_status()).into_iter()
             .map(|mut s| {
                 s.tags.insert("name".to_string(), self.name.clone());
                 s
@@ -151,7 +151,7 @@ impl Collector for Mongo {
 impl Mongo {
     fn server_status(&self) -> Result<Vec<Sample>, Error> {
         let client = self.client.as_ref().unwrap();
-        let document = try!(query_server_status(client, &self.user, &self.password));
+        let document = r#try!(query_server_status(client, &self.user, &self.password));
 
         /*
          * "version" : <string> => Tag
@@ -247,7 +247,7 @@ impl Mongo {
     #[allow(non_snake_case)]
     fn rs_status(&self) -> Result<Vec<Sample>, Error> {
         let client = self.client.as_ref().unwrap();
-        let document = try!(query_rs_status(client, &self.user, &self.password));
+        let document = r#try!(query_rs_status(client, &self.user, &self.password));
 
         if document.is_empty() {
             debug!("Received empty document, so no values to report");
@@ -306,10 +306,10 @@ impl Mongo {
 fn query_server_status(client: &Client, user: &Option<String>, password: &Option<String>) -> Result<Document, Error> {
     let db = client.db("admin");
     if let (&Some(ref u), &Some(ref pw)) = (user, password) {
-        try!(db.auth(u, pw));
+        r#try!(db.auth(u, pw));
     }
     let cmd = doc! { "serverStatus" => 1 };
-    let result = try!(db.command(cmd, CommandType::Suppressed, None));
+    let result = r#try!(db.command(cmd, CommandType::Suppressed, None));
     trace!("Document: {}", result);
 
     Ok(result)
@@ -318,7 +318,7 @@ fn query_server_status(client: &Client, user: &Option<String>, password: &Option
 fn query_rs_status(client: &Client, user: &Option<String>, password: &Option<String>) -> Result<Document, Error> {
     let db = client.db("admin");
     if let (&Some(ref u), &Some(ref pw)) = (user, password) {
-        try!(db.auth(u, pw));
+        r#try!(db.auth(u, pw));
     }
     let cmd = doc! { "replSetGetStatus" => 1 };
     let doc = match db.command(cmd, CommandType::Suppressed, None) {
@@ -339,7 +339,7 @@ fn query_rs_status(client: &Client, user: &Option<String>, password: &Option<Str
     match doc.get("ok") {
         Some(&Bson::FloatingPoint(v)) if v == 1.0 => Ok(doc),
         // This happens when the replSetGetStatus call is not supported, e.g., on mongos
-        Some(&Bson::FloatingPoint(v)) => Ok(doc!{}),
+        Some(&Bson::FloatingPoint(_v)) => Ok(doc!{}),
         _ => Err(Error::CollectionError(format!("replSetGetStatus: unexpected result document '{}'", doc)))
     }
 }

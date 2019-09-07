@@ -1,4 +1,4 @@
-use collectors::rscollector::RS_COLLECTOR_STATS_SAMPLES_METRICNAME;
+use crate::collectors::rscollector::RS_COLLECTOR_STATS_SAMPLES_METRICNAME;
 
 use bosun_emitter::{BosunClient, Datum, EmitterResult};
 use bosun_emitter;

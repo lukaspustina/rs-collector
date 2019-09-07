@@ -1,5 +1,5 @@
-use bosun::{Metadata, Sample};
-use config::Config;
+use crate::bosun::{Metadata, Sample};
+use crate::config::Config;
 
 use std::fmt;
 use std::error::Error as StdError;
@@ -49,7 +49,7 @@ pub trait Collector {
     fn get_tick_interval(&self) -> i32 { 1 }
 }
 
-pub fn create_collectors(config: &Config) -> Vec<Box<Collector + Send>> {
+pub fn create_collectors(config: &Config) -> Vec<Box<dyn Collector + Send>> {
     let mut collectors = Vec::new();
 
     // Create Galera collector instances

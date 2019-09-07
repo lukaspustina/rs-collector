@@ -11,22 +11,22 @@ use std::thread;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use Msg;
-use config::Config;
-use collectors::{Collector, Error};
-use collectors::Id;
-use bosun::{Bosun, BosunRequest, Metadata, Sample};
+use crate::Msg;
+use crate::config::Config;
+use crate::collectors::{Collector, Error};
+use crate::collectors::Id;
+use crate::bosun::{Bosun, BosunRequest, Metadata, Sample};
 
-pub fn run(collectors: Vec<Box<Collector + Send>>, config: &Config) -> () {
+pub fn run(collectors: Vec<Box<dyn Collector + Send>>, config: &Config) -> () {
     let signal = chan_signal::notify(&[Signal::INT, Signal::TERM]);
     let timer = chan::tick(Duration::from_secs(TICK_INTERVAL_SEC));
     info!("Scheduler thread started.");
 
-    let (to_main_tx, from_runners_rx) = chan::async();
+    let (to_main_tx, from_runners_rx) = chan::r#async();
     let controllers = create_controllers(collectors, to_main_tx);
     info!("Loaded {} collectors: {:#?}", controllers.len(), controllers);
 
-    let (to_bosun_tx, from_main_rx) = chan::async();
+    let (to_bosun_tx, from_main_rx) = chan::r#async();
     let bosun_thread = if config.DontSend.or(Some(false)).unwrap() {
         None
     } else {
@@ -101,7 +101,7 @@ struct CollectorRunner {
     id: Id,
     runner_rx: Receiver<CollectorRequest>,
     controller_tx: Sender<Msg<CollectorResponse>>,
-    collector: Arc<Mutex<Box<Collector + Send>>>,
+    collector: Arc<Mutex<Box<dyn Collector + Send>>>,
     tick_counter: i32,
     tick_interval: i32,
 }
@@ -110,7 +110,7 @@ impl CollectorRunner {
     fn new(id: Id,
            runner_rx: Receiver<CollectorRequest>,
            controller_tx: Sender<Msg<CollectorResponse>>,
-           collector: Box<Collector + Send>)
+           collector: Box<dyn Collector + Send>)
            -> CollectorRunner {
 
         let tick_interval = get_tick_interval(&collector);
@@ -244,12 +244,12 @@ impl CollectorRunner {
     }
 }
 
-fn get_tick_interval(collector: &Box<Collector + Send>) -> i32 {
+fn get_tick_interval(collector: &Box<dyn Collector + Send>) -> i32 {
     collector.get_tick_interval()
 }
 
 fn create_controllers(
-    collectors: Vec<Box<Collector + Send>>,
+    collectors: Vec<Box<dyn Collector + Send>>,
     runners_to_main_tx: Sender<Msg<CollectorResponse>>)
     -> HashMap<String, CollectorController> {
 
@@ -266,7 +266,7 @@ fn create_controllers(
             }
         }
 
-        let (to_runner_tx, from_controller_rx) = chan::async();
+        let (to_runner_tx, from_controller_rx) = chan::r#async();
         let id = c.id().clone();
         let mut controller = CollectorController::new(id.clone(), to_runner_tx);
         let runner = CollectorRunner::new(id.clone(),

@@ -1,6 +1,6 @@
-use bosun::{Metadata, Rate, Sample, Tags};
-use collectors::*;
-use config::Config;
+use crate::bosun::{Metadata, Rate, Sample, Tags};
+use crate::collectors::*;
+use crate::config::Config;
 
 use std::process::{Command, Output};
 use std::io::Result as IoResult;
@@ -18,7 +18,7 @@ pub struct Postfix {
     id: Id,
 }
 
-pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
+pub fn create_instances(config: &Config) -> Vec<Box<dyn Collector + Send>> {
     match config.Postfix {
         Some(_) => {
             let id = "postfix".to_string();
@@ -47,7 +47,7 @@ impl Collector for Postfix {
     }
 
     fn collect(&self) -> Result<Vec<Sample>, Error> {
-        let metric_data = try!(sample_queues());
+        let metric_data = r#try!(sample_queues());
 
         Ok(metric_data)
     }
@@ -112,7 +112,7 @@ struct QueueLength {
 fn sample_queues() -> Result<Vec<Sample>, Error> {
     let mut q_lens: Vec<QueueLength> = Vec::new();
     for q in POSTFIX_QUEUS {
-        let mut single_q_lens = try!(get_queue_len(q));
+        let mut single_q_lens = r#try!(get_queue_len(q));
         q_lens.append(&mut single_q_lens);
     }
     let metric_data: Vec<Sample> = q_lens.convert_to_metric();
@@ -123,7 +123,7 @@ fn sample_queues() -> Result<Vec<Sample>, Error> {
 
 fn get_queue_len(q_name: &str) -> Result<Vec<QueueLength>, Error> {
     let result = execute_qshape_for_queue(q_name);
-    let output = try!(handle_command_output(result));
+    let output = r#try!(handle_command_output(result));
     let stdout = String::from_utf8_lossy(&output.stdout);
     let lines: Vec<&str> = stdout.lines().take(2).collect();
     if lines.len() < 2 {
@@ -138,7 +138,7 @@ fn get_queue_len(q_name: &str) -> Result<Vec<QueueLength>, Error> {
     for i in 2..totals.len() {
         // Last column name ends in '+' which is an invalid char for OpenTSDB tag values:
         let bucket = header[i - 1].to_string().replace("+", "p");
-        let len = try!(totals[i].parse::<i32>());
+        let len = r#try!(totals[i].parse::<i32>());
         q_lens.push(QueueLength { name: q_name.to_string(), bucket: bucket, len: len });
     }
 

@@ -1,9 +1,9 @@
 // See http://galeracluster.com/documentation-webpages/monitoringthecluster.html
 
-use bosun::{Metadata, Rate, Sample};
-use collectors::*;
-use config::Config;
-use utils;
+use crate::bosun::{Metadata, Rate, Sample};
+use crate::collectors::*;
+use crate::config::Config;
+use crate::utils;
 
 use mysql as my;
 use std::path::PathBuf;
@@ -36,7 +36,7 @@ pub struct Galera {
     pool: Option<my::Pool>,
 }
 
-pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
+pub fn create_instances(config: &Config) -> Vec<Box<dyn Collector + Send>> {
     match config.Galera {
         Some(ref config) => {
             let id = format!("galera#{}@{}{}",
@@ -146,8 +146,8 @@ impl Collector for Galera {
     }
 
     fn collect(&self) -> Result<Vec<Sample>, Error> {
-        if let Some(ref pool) = self.pool {
-            let wsrepstates: Vec<WsrepStatus> = try!(query_wsrep_status(self.pool.as_ref().unwrap()));
+        if let Some(ref _pool) = self.pool {
+            let wsrepstates: Vec<WsrepStatus> = r#try!(query_wsrep_status(self.pool.as_ref().unwrap()));
             trace!("wsrepstates = {:#?}", wsrepstates);
             let metric_data = wsrepstates.convert_to_metric();
             debug!("metric_data = {:#?}", metric_data);
@@ -532,7 +532,7 @@ impl ConvertToMetric for Vec<WsrepStatus> {
 #[cfg(test)]
 mod tests {
     use super::{WsrepStatus, ConvertToMetric};
-    use bosun::Sample;
+    use crate::bosun::Sample;
 
     impl PartialEq for Sample {
         fn eq(&self, other: &Sample) -> bool {

@@ -1,6 +1,6 @@
-use bosun::{Metadata, Rate, Sample};
-use collectors::*;
-use config::Config;
+use crate::bosun::{Metadata, Rate, Sample};
+use crate::collectors::*;
+use crate::config::Config;
 
 use std::num::ParseFloatError;
 #[cfg(target_os = "linux")]
@@ -19,7 +19,7 @@ pub struct RsCollector {
     id: Id,
 }
 
-pub fn create_instances(_: &Config) -> Vec<Box<Collector + Send>> {
+pub fn create_instances(_: &Config) -> Vec<Box<dyn Collector + Send>> {
     let id = format!("rscollector");
     info!("Created instance of RsCollector collector: {}", id);
 
@@ -37,7 +37,7 @@ impl Collector for RsCollector {
     }
 
     fn collect(&self) -> Result<Vec<Sample>, Error> {
-        let samples = try!(collect_internal_metrics());
+        let samples = r#try!(collect_internal_metrics());
         debug!("{:#?}", samples);
 
         Ok(samples)

@@ -1,6 +1,6 @@
-use bosun::{Metadata, Rate, Sample, Tags};
-use collectors::*;
-use config::Config;
+use crate::bosun::{Metadata, Rate, Sample, Tags};
+use crate::collectors::*;
+use crate::config::Config;
 
 use get_if_addrs::{get_if_addrs, IfAddr};
 use itertools::Itertools;
@@ -28,7 +28,7 @@ pub struct HasIpAddr {
     ipv4: Vec<Ipv4Addr>,
 }
 
-pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
+pub fn create_instances(config: &Config) -> Vec<Box<dyn Collector + Send>> {
     match config.HasIpAddr {
         Some(ref config) => {
             let id = format!("hasipaddr#{}", config.Ipv4.iter().join(","));
@@ -55,7 +55,7 @@ impl Collector for HasIpAddr {
     }
 
     fn collect(&self) -> Result<Vec<Sample>, Error> {
-        let metric_data = try!(check_for_ip_addrs(&self.ipv4));
+        let metric_data = r#try!(check_for_ip_addrs(&self.ipv4));
 
         Ok(metric_data)
     }
@@ -73,7 +73,7 @@ impl Collector for HasIpAddr {
 }
 
 fn check_for_ip_addrs(ipv4s: &Vec<Ipv4Addr>) -> Result<Vec<Sample>, Error> {
-    let local_addrs = try!(get_if_addrs()).into_iter()
+    let local_addrs = r#try!(get_if_addrs()).into_iter()
         .flat_map(|i|
             match i.addr {
                 IfAddr::V4(iface) => Some(iface.ip),

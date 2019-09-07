@@ -1,6 +1,6 @@
-use bosun::{Metadata, Rate, Sample, Tags};
-use collectors::*;
-use config::Config;
+use crate::bosun::{Metadata, Rate, Sample, Tags};
+use crate::collectors::*;
+use crate::config::Config;
 use is_executable::IsExecutable;
 use std::path::Path;
 use regex::Regex;
@@ -29,7 +29,7 @@ pub struct MegaraidConfig {
     adapter: Option<i32>,
 }
 
-pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
+pub fn create_instances(config: &Config) -> Vec<Box<dyn Collector + Send>> {
     if let Some(ref cfg) = config.Megaraid {
         info!("Created instance of Megaraid collector");
         let id = format!("megaraid#{}", "0");

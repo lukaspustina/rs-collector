@@ -1,6 +1,6 @@
-use bosun::{Metadata, Rate, Sample, Tags};
-use collectors::*;
-use config::Config;
+use crate::bosun::{Metadata, Rate, Sample, Tags};
+use crate::collectors::*;
+use crate::config::Config;
 
 use regex::Regex;
 use std::collections::HashMap;
@@ -24,7 +24,7 @@ pub struct Jvm {
     metadata: HashMap<String, Metadata>,
 }
 
-pub fn create_instances(config: &Config) -> Vec<Box<Collector + Send>> {
+pub fn create_instances(config: &Config) -> Vec<Box<dyn Collector + Send>> {
     if !config.Jvm.is_empty() {
         let id = "jvm".to_string();
         info!("Created instance of JVM collector: {}", id);
@@ -56,7 +56,7 @@ impl Collector for Jvm {
     }
 
     fn collect(&self) -> Result<Vec<Sample>, Error> {
-        let jvm_processes = try!(get_jps());
+        let jvm_processes = r#try!(get_jps());
         let results: Vec<Result<Vec<GcStat>, Error>> = jvm_processes.iter()
             .map(|jp| identify_jvms(&self.jvms, jp))
             .filter(|jvm| jvm.name.is_some())
@@ -224,7 +224,7 @@ struct JvmProcess {
 
 fn get_jps() -> Result<Vec<JvmProcess>, Error>{
     let result = execute_jps();
-    let output = try!(handle_command_output("jps", result));
+    let output = r#try!(handle_command_output("jps", result));
     let stdout = String::from_utf8_lossy(&output.stdout);
     let lines: Vec<&str> = stdout.lines().collect();
     if lines.is_empty() {
@@ -241,7 +241,7 @@ fn get_jps() -> Result<Vec<JvmProcess>, Error>{
             trace!("Failed to parse jps output for lines: '{}'", stdout);
             return Err(Error::CollectionError(msg));
         }
-        let pid: u16 = try!(cols[0].parse::<u16>());
+        let pid: u16 = r#try!(cols[0].parse::<u16>());
         let jp = JvmProcess { pid: pid, class: cols[1].to_string(), cmdline: cols[2..].join(" ").to_string() };
         trace!("Found JVM Process '{:?}'", jp);
         jps.push(jp)
@@ -284,7 +284,7 @@ struct GcStat {
 
 fn sample_gc_stats(jvm: &IdentifiedJvm) -> Result<Vec<GcStat>, Error> {
     let result = execute_jstat(jvm);
-    let output = try!(handle_command_output("jstat", result));
+    let output = r#try!(handle_command_output("jstat", result));
     let stdout = String::from_utf8_lossy(&output.stdout);
     let lines: Vec<&str> = stdout.lines().collect();
     if lines.len() != 2  {
@@ -298,7 +298,7 @@ fn sample_gc_stats(jvm: &IdentifiedJvm) -> Result<Vec<GcStat>, Error> {
     let mut gcstats = Vec::new();
     for i in 0..values.len() {
         let name = names[i];
-        let value = try!(values[i].parse::<f64>());
+        let value = r#try!(values[i].parse::<f64>());
         // Unwrap is safe, but only due to the filter in the main algorithm
         let gcstat = GcStat{ jvm_name: jvm.name.as_ref().unwrap().clone(), name: name.to_string(), value: value };
         trace!("Successfully run gcstat for JVM Process '{:?}': '{:?}'", jvm, gcstat);

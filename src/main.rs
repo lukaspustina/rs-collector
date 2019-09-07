@@ -75,10 +75,10 @@ fn init_logger() -> Result<(), SetLoggerError> {
     builder.init()
 }
 
-fn parse_args(cli_args: &ArgMatches) -> Result<Config, Box<Error>> {
+fn parse_args(cli_args: &ArgMatches) -> Result<Config, Box<dyn Error>> {
     let config_file_path = Path::new(cli_args.value_of("configfile").unwrap_or(DEFAULT_CONFIG_FILE));
     let config: Config = if config_file_path.exists() {
-        let config = try!(Config::load_from_rs_collector_config(&config_file_path));
+        let config = r#try!(Config::load_from_rs_collector_config(&config_file_path));
         config
     } else {
         Default::default()

@@ -5,12 +5,12 @@ use std::io::Read;
 use std::path::Path;
 use toml;
 
-use collectors::galera::GaleraConfig;
-use collectors::hasipaddr::HasIpAddrConfig;
-use collectors::jvm::JvmConfig;
-use collectors::postfix::PostfixConfig;
-use collectors::mongo::MongoConfig;
-use collectors::megaraid::MegaraidConfig;
+use crate::collectors::galera::GaleraConfig;
+use crate::collectors::hasipaddr::HasIpAddrConfig;
+use crate::collectors::jvm::JvmConfig;
+use crate::collectors::postfix::PostfixConfig;
+use crate::collectors::mongo::MongoConfig;
+use crate::collectors::megaraid::MegaraidConfig;
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]
@@ -42,11 +42,11 @@ pub struct Config {
 
 impl Config {
     /// Loads a configuration from an [SCollector](http://bosun.org/scollector/) configuration file.
-    pub fn load_from_rs_collector_config(file_path: &Path) -> Result<Config, Box<::std::error::Error>> {
+    pub fn load_from_rs_collector_config(file_path: &Path) -> Result<Config, Box<dyn (::std::error::Error)>> {
         match Config::load_toml(file_path) {
             Ok(toml) => {
                 let mut decoder = toml::Decoder::new(toml);
-                let config = try!(Config::decode(&mut decoder));
+                let config = r#try!(Config::decode(&mut decoder));
 
                 Ok(config)
             }
@@ -54,10 +54,10 @@ impl Config {
         }
     }
 
-    fn load_toml(file_path: &Path) -> Result<toml::Value, Box<::std::error::Error>> {
-        let mut config_file = try!(File::open(file_path));
+    fn load_toml(file_path: &Path) -> Result<toml::Value, Box<dyn (::std::error::Error)>> {
+        let mut config_file = r#try!(File::open(file_path));
         let mut config_content = String::new();
-        try!(config_file.read_to_string(&mut config_content));
+        r#try!(config_file.read_to_string(&mut config_content));
 
         let mut parser = toml::Parser::new(&config_content);
         match parser.parse() {

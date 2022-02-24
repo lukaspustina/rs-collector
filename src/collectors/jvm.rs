@@ -217,7 +217,7 @@ fn handle_command_output(command: &str, result: IoResult<Output>) -> Result<Outp
 
 #[derive(Debug)]
 struct JvmProcess {
-    pid: u16,
+    pid: u32,
     class: String,
     cmdline: String,
 }
@@ -241,7 +241,7 @@ fn get_jps() -> Result<Vec<JvmProcess>, Error>{
             trace!("Failed to parse jps output for lines: '{}'", stdout);
             return Err(Error::CollectionError(msg));
         }
-        let pid: u16 = r#try!(cols[0].parse::<u16>());
+        let pid: u32 = r#try!(cols[0].parse());
         let jp = JvmProcess { pid: pid, class: cols[1].to_string(), cmdline: cols[2..].join(" ").to_string() };
         trace!("Found JVM Process '{:?}'", jp);
         jps.push(jp)
@@ -256,7 +256,7 @@ fn execute_jps() -> IoResult<Output> {
 
 #[derive(Debug)]
 struct IdentifiedJvm {
-    pid: u16,
+    pid: u32,
     name: Option<String>,
 }
 

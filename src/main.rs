@@ -46,6 +46,8 @@ fn main() {
         println!("config: {:?}", config);
     }
 
+    std::panic::set_hook(Box::new(print_panic_and_abort));
+
     run(&config);
 }
 
@@ -87,6 +89,20 @@ fn parse_args(cli_args: &ArgMatches) -> Result<Config, Box<dyn Error>> {
     Ok(config)
 }
 
+fn print_panic_and_abort(info: &std::panic::PanicInfo<'_>) {
+    if let Some(loc) = info.location() {
+        println!("Application panicked at {}", loc);
+    } else {
+        println!("Application panicked");
+    }
+
+    if let Some(msg) = info.payload().downcast_ref::<&str>() {
+        println!("Reason: {}", msg);
+    }
+
+    std::process::abort()
+}
+
 fn run(config: &Config) {
     let collectors = rs_collector::collectors::create_collectors(config);
     rs_collector::scheduler::run(collectors, config);
@@ -96,7 +112,6 @@ fn exit_with_error(msg: &str, exit_code: i32) -> ! {
     println!("{}", msg);
     std::process::exit(exit_code);
 }
-
 
 #[cfg(test)]
 mod tests {

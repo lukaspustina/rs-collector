@@ -41,6 +41,7 @@
 - [ ] Move project to Rheinwerk
 - [ ] Extend bosun_emitter to send multiple data points
 - [ ] Support multiple Galera Collectors -- also change in Ansible role
+- [ ] Make threads resilient against panics (current workaround: abort on panic so that no thread dies unknowingly)
 
 ## Collectors
 

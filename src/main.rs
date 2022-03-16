@@ -46,7 +46,23 @@ fn main() {
         println!("config: {:?}", config);
     }
 
+    std::panic::set_hook(Box::new(print_panic_and_abort));
+
     run(&config);
+}
+
+fn print_panic_and_abort(info: &std::panic::PanicInfo<'_>) {
+    if let Some(loc) = info.location() {
+        println!("Application panicked at {}", loc);
+    } else {
+        println!("Application panicked");
+    }
+
+    if let Some(msg) = info.payload().downcast_ref::<&str>() {
+        println!("Reason: {}", msg);
+    }
+
+    std::process::abort()
 }
 
 fn init_logger() -> Result<(), SetLoggerError> {
@@ -96,7 +112,6 @@ fn exit_with_error(msg: &str, exit_code: i32) -> ! {
     println!("{}", msg);
     std::process::exit(exit_code);
 }
-
 
 #[cfg(test)]
 mod tests {

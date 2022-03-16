@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- panics will now abort the application to avoid dead collectors or a dead bosun emitter going unnoticed
+
 
 ## [0.1.7] - 2018-06-18
 

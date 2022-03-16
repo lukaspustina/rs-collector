@@ -51,20 +51,6 @@ fn main() {
     run(&config);
 }
 
-fn print_panic_and_abort(info: &std::panic::PanicInfo<'_>) {
-    if let Some(loc) = info.location() {
-        println!("Application panicked at {}", loc);
-    } else {
-        println!("Application panicked");
-    }
-
-    if let Some(msg) = info.payload().downcast_ref::<&str>() {
-        println!("Reason: {}", msg);
-    }
-
-    std::process::abort()
-}
-
 fn init_logger() -> Result<(), SetLoggerError> {
     use log::{LogRecord, LogLevelFilter};
     use env_logger::LogBuilder;
@@ -101,6 +87,20 @@ fn parse_args(cli_args: &ArgMatches) -> Result<Config, Box<dyn Error>> {
     };
 
     Ok(config)
+}
+
+fn print_panic_and_abort(info: &std::panic::PanicInfo<'_>) {
+    if let Some(loc) = info.location() {
+        println!("Application panicked at {}", loc);
+    } else {
+        println!("Application panicked");
+    }
+
+    if let Some(msg) = info.payload().downcast_ref::<&str>() {
+        println!("Reason: {}", msg);
+    }
+
+    std::process::abort()
 }
 
 fn run(config: &Config) {
